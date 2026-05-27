@@ -38,6 +38,9 @@ The **client** connects to the server and dispatches each received instruction.
 - [ ] File upload / download
 - [ ] Persistence
 - [ ] Multi-client support
+- [ ] Secure communication (AES256)
+- [ ] GUI (maybe)
+- [ ] And more
 
 ## Usage
 

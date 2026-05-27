@@ -2,7 +2,6 @@ use std::{io::{self, Write}, net::{TcpListener, TcpStream, Shutdown}};
 
 
 fn handle_client(mut conn: TcpStream) -> Result<(), String>{
-    println!("Client connected: {:#?}", conn);
 
     // let mut buff = [0; 1024];
     let mut instruct = String::new();
@@ -22,15 +21,14 @@ fn handle_client(mut conn: TcpStream) -> Result<(), String>{
             break;
         }
         
-        handle_instruct(instruct, &mut conn)?;
+        handle_instruct(&instruct, &mut conn)?;
     }
-
     
     Ok(())
 }
 
 
-fn handle_instruct(instruct: String, conn: &mut TcpStream) -> Result<(), String> {
+fn handle_instruct(instruct: &String, conn: &mut TcpStream) -> Result<(), String> {
     match conn.write_all(instruct.trim().as_bytes()) {
         Ok(_) => (),
         Err(e) => return Err(e.to_string())
@@ -49,6 +47,7 @@ fn main() {
     for stream in listener.incoming(){
         match stream {
             Ok(stream) =>  {
+                println!("Client connected: {:?}", stream.peer_addr());
                 match handle_client(stream) {
                     Ok(_) => (),
                     Err(err) => eprintln!("{}", err)
