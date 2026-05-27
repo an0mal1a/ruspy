@@ -1,8 +1,8 @@
-use std::{io::{self, Write}, net::{TcpListener, TcpStream}};
+use std::{io::{self, Write}, net::{TcpListener, TcpStream, Shutdown}};
 
 
-fn handle_client(mut stream: TcpStream) -> Result<(), String>{
-    println!("Client connected: {:#?}", stream);
+fn handle_client(mut conn: TcpStream) -> Result<(), String>{
+    println!("Client connected: {:#?}", conn);
 
     // let mut buff = [0; 1024];
     let mut instruct = String::new();
@@ -17,16 +17,25 @@ fn handle_client(mut stream: TcpStream) -> Result<(), String>{
             .map_err(|e| e.to_string())?;
 
         if instruct.trim().to_ascii_lowercase() == "q" {
+            conn.write_all(b"q").map_err(|e| e.to_string())?;
+            conn.shutdown(Shutdown::Both).map_err(|e| e.to_string())?;
             break;
         }
         
-        match stream.write_all(instruct.trim().as_bytes()) {
-            Ok(_) => (),
-            Err(e) => return Err(e.to_string())
-        };
+        handle_instruct(instruct, &mut conn)?;
     }
 
     
+    Ok(())
+}
+
+
+fn handle_instruct(instruct: String, conn: &mut TcpStream) -> Result<(), String> {
+    match conn.write_all(instruct.trim().as_bytes()) {
+        Ok(_) => (),
+        Err(e) => return Err(e.to_string())
+    };
+
     Ok(())
 }
 
