@@ -1,4 +1,8 @@
-use std::{io::{Read, Write}, net::{TcpStream, Shutdown}};
+// Dependecies
+use std::{io::Read, net::{TcpStream, Shutdown}};
+
+// Internal modules
+mod commands;
 
 const SERVER_ADDRESS: &str = "127.0.0.1:1337";
 
@@ -21,27 +25,19 @@ fn handle_server(mut conn: TcpStream) -> Result<(), String> {
         let instruct = String::from_utf8_lossy(&buff[..bytes_read]);
 
         // This functions return false when we should close the connection
-        if !handle_instruct(&instruct, &mut conn) {
-            break
-        }
+        match handle_instruct(instruct.trim(), &mut conn) {
+            Ok(b) if b => (),
+            Err(err) => { println!("An error has ocurred: {}", err); break; }
+            _ => break
+        };
     }
 
     conn.shutdown(Shutdown::Both).map_err(|e| e.to_string())?;
     Ok(())
 }
 
-fn handle_instruct(instruct: &str, conn: &mut TcpStream) -> bool {
-    match instruct {
-        "q" => false,
-        "hello" => {
-            conn.write_all(b"World").expect("I can not send the response to server...");
-            return true;
-        },
-        _ => {
-            println!("The command is not recognized: {}", instruct);
-            return true;
-        }
-    }
+fn handle_instruct(instruct: &str, conn: &mut TcpStream) -> Result<bool, String> {
+    commands::dispatch(instruct, conn)
 }
 
 fn main() {

@@ -1,7 +1,43 @@
-use std::{io::{self, Write}, net::{TcpListener, TcpStream, Shutdown}};
+// Dependecies
+use std::{io::{self, Write}, net::{Shutdown, TcpListener, TcpStream}};
 
 
-fn handle_client(mut conn: TcpStream) -> Result<(), String>{
+// Internal modules
+mod constants;
+mod commands;
+mod c2_state;
+
+use constants::{RESET, DIM, BOLD, WHITE, GREEN, YELLOW, RED, CYAN };
+use c2_state::C2State;
+
+
+pub fn print_prompt(state: &C2State) {
+    let count = state.agent_count(); 
+    let module = state.current_mod();
+
+    let agents_color = match count {
+        0       => RED,
+        1..=4   => YELLOW,
+        _       => CYAN,
+    };
+
+    print!(
+        "{BOLD}{RED}C&C{RESET} \
+         {DIM}[{RESET}{agents_color}agents:{count}{RESET}{DIM}]{RESET} \
+         {DIM}[{RESET}{WHITE}mod:{module}{RESET}{DIM}]{RESET} \
+         {BOLD}{CYAN}❯{RESET} ",
+    );
+
+    io::stdout().flush().unwrap();
+}
+
+fn handle_instruct(instruct: &str, conn: &mut TcpStream) -> Result<bool, String> {
+    commands::dispatch(instruct, conn)
+}
+
+
+fn handle_client(mut conn: TcpStream, state: &C2State) -> Result<(), String>{
+
 
     // let mut buff = [0; 1024];
     let mut instruct = String::new();
@@ -11,34 +47,36 @@ fn handle_client(mut conn: TcpStream) -> Result<(), String>{
         instruct.clear(); // Clear the buffer
 
         // Read from CLI
+        print_prompt(state);
+        
+        io::stdout().flush().expect("Server failed to flush output");
         io::stdin()
             .read_line(&mut instruct)
             .map_err(|e| e.to_string())?;
 
-        if instruct.trim().to_ascii_lowercase() == "q" {
+        if instruct.trim().to_ascii_lowercase() == "q" || instruct.trim().to_ascii_lowercase() == "exit" {
             conn.write_all(b"q").map_err(|e| e.to_string())?;
             conn.shutdown(Shutdown::Both).map_err(|e| e.to_string())?;
             break;
         }
         
-        handle_instruct(&instruct, &mut conn)?;
+        match handle_instruct(instruct.trim(), &mut conn) {
+            Ok(b) if b => "",
+            Err(err) => { println!("An error has ocurred: {}", err); break; }
+            _ => break
+        };
     }
     
     Ok(())
 }
 
 
-fn handle_instruct(instruct: &String, conn: &mut TcpStream) -> Result<(), String> {
-    match conn.write_all(instruct.trim().as_bytes()) {
-        Ok(_) => (),
-        Err(e) => return Err(e.to_string())
-    };
 
-    Ok(())
-}
 
 
 fn main() {
+    let state: C2State = C2State::new();
+
     let listener = TcpListener::bind("127.0.0.1:1337")
         .expect("the port can not be opened...");
 
@@ -48,7 +86,15 @@ fn main() {
         match stream {
             Ok(stream) =>  {
                 println!("Client connected: {:?}", stream.peer_addr());
-                match handle_client(stream) {
+                
+                // Add address to agent state
+                let Some(addr) = stream.peer_addr().ok() else {
+                    eprintln!("{}[!]{} No se pudo obtener peer_addr", RED, RESET);
+                    return;
+                };
+                state.add_agent(&addr.to_string());
+
+                match handle_client(stream, &state) {
                     Ok(_) => (),
                     Err(err) => eprintln!("{}", err)
                 }
