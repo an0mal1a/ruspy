@@ -1,11 +1,13 @@
 use serde::{Serialize, Deserialize};
-
 pub mod utils;
+
+pub const FILE_CHUNK_SIZE: usize = 64 * 1024;
 
 // Client/Server messages
 #[derive(Serialize, Deserialize)]
 pub enum ClientMessage  {
     SystemInformation(SystemInformation),
+    FileDownload(FileHeader),
     Pong, 
     Error(String)
 }
@@ -15,6 +17,13 @@ pub enum ClientMessage  {
 pub enum Privilege {
     Admin,
     User
+}
+
+// File header
+#[derive(Serialize, Deserialize)]
+pub struct FileHeader {
+    pub name: String,
+    pub size: u64
 }
 
 //  System information

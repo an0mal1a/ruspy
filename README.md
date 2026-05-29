@@ -34,6 +34,7 @@ The **client** connects to the server and dispatches each received instruction.
 - [x] TCP connection between server and client
 - [x] Basic instruction dispatch loop
 - [x] Graceful disconnection (`q` command)
+- [ ] Change instruct send of string to enum
 - [ ] Shell command execution
 - [ ] File upload / download
 - [ ] Persistence
