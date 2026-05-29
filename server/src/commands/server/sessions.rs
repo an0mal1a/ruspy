@@ -1,5 +1,5 @@
 use crate::{c2_state::{AgentConnection, C2State}, constants::{CYAN, DIM, RED, RESET, YELLOW, GREEN}};
-use std::{io::{Write}, net::{Shutdown, TcpStream}};
+use std::net::TcpStream;
 use rustyline::DefaultEditor;
 
 use crate::constants;

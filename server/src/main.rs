@@ -1,5 +1,5 @@
 // Dependecies
-use std::{io::{Write}, net::TcpListener, sync::{Arc, mpsc::{Receiver, Sender}}, thread::{self, sleep}};
+use std::{net::TcpListener, sync::{Arc, mpsc::{Receiver, Sender}}, thread::{self, sleep}};
 // use rustyline::error::ReadlineError;
 use rustyline::{DefaultEditor};
 use core::time;
@@ -10,7 +10,7 @@ mod constants;
 mod commands;
 mod c2_state;
 
-use constants::{RESET, DIM, BOLD, WHITE, GREEN, YELLOW, RED, CYAN, UiEvent};
+use constants::{RESET, DIM, WHITE, GREEN, RED, CYAN, UiEvent};
 use c2_state::C2State;
 
 
@@ -77,7 +77,6 @@ fn handle_sessions(state: Arc<C2State>, ui_rx: Receiver<UiEvent>) -> Result<(), 
         match handle_server_instruct(instruct.trim().split_whitespace().collect(), &state) {
             Ok(_) => (),
             Err(err) => { println!("An error has ocurred: {}", err); break; }
-            _ => break
         };
     }
 
