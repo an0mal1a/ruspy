@@ -86,6 +86,10 @@ fn handle_client(agent: AgentConnection, state: &C2State) -> Result<(), String>{
             state.set_mod("manager");
             break;
         }
+
+        if !instruct.trim().is_empty() {
+            let _ = rl.add_history_entry(instruct.as_str());
+        }
         
         match handle_client_instruct(instruct.trim(), &mut conn, state) {
             Ok(b) if b => "",

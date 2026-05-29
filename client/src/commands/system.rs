@@ -1,4 +1,4 @@
-use shared::{SystemInformation, OsInformation, HardwareInformation, MemoryInformation, ProcessInformation, ClientMessage, utils::send_message};
+use shared::{SystemInformation, OsInformation, HardwareInformation, MemoryInformation, ProcessInformation, DiskInformation, ClientMessage, utils::send_message};
 use std::net::TcpStream;
 
 use sysinfo::{
@@ -30,7 +30,7 @@ fn get_system_information() -> SystemInformation {
         used_swap: sys.used_swap(),
     };
 
-    let mut processes: Vec<ProcessInformation> = sys
+    let processes: Vec<ProcessInformation> = sys
         .processes()
         .iter()
         .map(|(pid, process)| ProcessInformation {
@@ -41,10 +41,22 @@ fn get_system_information() -> SystemInformation {
         })
         .collect();
 
-    // processes.sort_by(|a, b| b.cpu_usage.total_cmp(&a.cpu_usage));
+    let disks_raw: Disks = Disks::new_with_refreshed_list();
+    
+    let disks:Vec<DiskInformation> = disks_raw
+        .iter()
+        .map(|disk| DiskInformation {
+            name: disk.name().to_string_lossy().to_string(),
+            file_system: disk.file_system().to_string_lossy().to_string(),
+            total_space: disk.total_space(),
+            available_space: disk.available_space(),
+            is_removable: disk.is_removable(),
+            is_read_only: disk.is_read_only(),
+            device_path: disk.mount_point().to_string_lossy().to_string(),
+        }).collect();
 
 
-    SystemInformation { os: os_info, hardware: hwd_info, memory: mem_info, processes }
+    SystemInformation { os: os_info, hardware: hwd_info, memory: mem_info, processes, disks }
 }   
 
 pub fn sysinfo(conn: &mut TcpStream) -> Result<bool, String> {

@@ -75,6 +75,29 @@ fn pretty_print_sysinfo(info: &SystemInformation) {
         fmt_bytes(info.memory.total_swap)
     );
 
+    println!("\n\t{DIM}[{RESET}{WHITE}disks{RESET}{DIM}]{RESET}");
+    println!(
+        "\t\t{DIM}{:<18} {:<10} {:>12} {:>12} {:<5} {}{RESET}",
+        "NAME", "FS", "USED", "TOTAL", "RO", "MOUNT"
+    );
+
+    for disk in &info.disks {
+        let used_space = disk.total_space.saturating_sub(disk.available_space);
+        let read_only = if disk.is_read_only { "yes" } else { "no" };
+        let removable = if disk.is_removable { "removable" } else { "" };
+
+        println!(
+            "\t\t{:<18} {:<10} {:>12} {:>12} {:<5} {CYAN}{}{RESET} {DIM}{}{RESET}",
+            disk.name,
+            disk.file_system,
+            fmt_bytes(used_space),
+            fmt_bytes(disk.total_space),
+            read_only,
+            disk.device_path,
+            removable
+        );
+    }
+
     println!("\n\t{DIM}[{RESET}{WHITE}processes:top 15{RESET}{DIM}]{RESET}");
     println!(
         "\t\t{DIM}{:<8} {:>7} {:>12}  {}{RESET}",
