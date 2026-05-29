@@ -139,3 +139,9 @@ pub fn check_permissions(conn: &mut TcpStream) -> Result<bool, String> {
         }
     }
 }
+
+
+pub fn display(instruct: &[&str], conn: &mut TcpStream) -> Result<bool, String> {
+    conn.write_all(instruct.join(" ").as_bytes()).expect("Error sending instruct");
+    Ok(true)
+}

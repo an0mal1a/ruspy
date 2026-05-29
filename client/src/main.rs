@@ -25,7 +25,7 @@ fn handle_server(mut conn: TcpStream) -> Result<(), String> {
         let instruct = String::from_utf8_lossy(&buff[..bytes_read]);
 
         // This functions return false when we should close the connection
-        match handle_instruct(instruct.trim(), &mut conn) {
+        match handle_instruct(instruct.trim().split_whitespace().collect(), &mut conn) {
             Ok(b) if b => (),
             Err(err) => { println!("An error has ocurred: {}", err); break; }
             _ => break
@@ -37,7 +37,7 @@ fn handle_server(mut conn: TcpStream) -> Result<(), String> {
     Ok(())
 }
 
-fn handle_instruct(instruct: &str, conn: &mut TcpStream) -> Result<bool, String> {
+fn handle_instruct(instruct: Vec<&str>, conn: &mut TcpStream) -> Result<bool, String> {
     commands::dispatch(instruct, conn)
 }
 

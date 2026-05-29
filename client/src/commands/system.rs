@@ -1,9 +1,8 @@
+use rfd::MessageDialog;
 use shared::{ClientMessage, DiskInformation, HardwareInformation, MemoryInformation, OsInformation, Privilege, ProcessInformation, SystemInformation, utils::send_message};
 use std::net::TcpStream;
 
-use sysinfo::{
-    Disks, Networks, System, 
-};
+use sysinfo::{Disks, System};
 
 // ---- sysInfo ---------------------------
 
@@ -94,4 +93,24 @@ pub fn check_privileges(conn: &mut TcpStream) -> Result<bool, String> {
     }
 }
 
-// ---- sysInfo ---------------------------
+// ---- checkPrivileges ---------------------------
+
+
+// ---- Display ---------------------------
+
+pub fn display_message(instruct: &[&str]) -> Result<bool, String> {
+    let msg = match instruct.get(1..instruct.len()) {
+        Some(msg) => msg.join(" "),
+        None => { return Ok(true) }
+    };
+
+    MessageDialog::new()
+        .set_level(rfd::MessageLevel::Info)
+        .set_title("")
+        .set_description(msg)
+        .show();
+
+    Ok(true)
+}
+
+// ---- Display ---------------------------
