@@ -1,8 +1,14 @@
-use std::sync::{Arc, Mutex};
+use std::{net::TcpStream, sync::{Arc, Mutex}};
 
 pub struct C2State {
-    pub agents:      Arc<Mutex<Vec<String>>>,
+    pub agents:      Arc<Mutex<Vec<AgentConnection>>>,
     pub active_mod:  Arc<Mutex<String>>,
+}
+
+pub struct AgentConnection {
+    id: usize,
+    ip: String,
+    conn: TcpStream
 }
 
 impl C2State {
@@ -25,12 +31,12 @@ impl C2State {
         *self.active_mod.lock().unwrap() = module.to_string()
     }
 
-    pub fn add_agent(&self, id: &str) {
-        self.agents.lock().unwrap().push(id.to_string());
+    pub fn add_agent(&self, ip: &str, conn: TcpStream) {
+        self.agents.lock().unwrap().push(AgentConnection { id: self.agent_count() + 1, ip: ip.to_string(), conn });
     }
 
-    pub fn remove_agent(&self, id: &str) {
-        self.agents.lock().unwrap().retain(|a| a != id);
+    pub fn remove_agent(&self, id: usize) {
+        self.agents.lock().unwrap().retain(|a| a.id != id);
     }
 
 }
