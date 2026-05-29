@@ -1,20 +1,29 @@
-use crate::constants::{YELLOW, RED, BOLD, WHITE, DIM, RESET};
+use crate::{c2_state::C2State, constants::{BOLD, DIM, RED, RESET, WHITE, YELLOW}};
 use std::{net::TcpStream};
 
 pub mod client;
 pub mod server;
 
-pub fn dispatch_client(instruct: &str, conn: &mut TcpStream) -> Result<bool, String> {    
-    match instruct {
-        "ping" => client::ping::run(conn),
+pub fn dispatch_client(instruct:  Vec<&str>, conn: &mut TcpStream, state: &C2State) -> Result<bool, String> {    
+    match instruct.first() {
+        // Local commands
+        Some(&"lcd") => server::local::local_cd(&instruct),
+        Some(&"lls") => server::local::local_list(),
+        Some(&"lpwd") => server::local::local_pwd(),
+        Some(&"clear") => server::local::clear_console(),
+
+        Some(&"ping") => client::ping::run(conn),
+
+        // Close
+        Some(&"close") => client::control::close_session(conn, state, true),
         _ => {
-            println!("\n\t{}[{}!{}>{}]{} Incorrect instruction: {}{}\n", YELLOW, RED, BOLD, YELLOW, YELLOW, RESET, instruct);
+            println!("\n\t{}[{}!{}>{}]{} Incorrect instruction: {}{}\n", YELLOW, RED, BOLD, YELLOW, YELLOW, RESET, instruct.join(" "));
             Ok(true)
         }
     }
 }
 
-pub fn dispatch_server(instruct: Vec<&str>) -> Result<bool, String> {    
+pub fn dispatch_server(instruct: Vec<&str>, state: &C2State) -> Result<bool, String> {    
     match instruct.first() {
         // Local commands
         Some(&"lcd") => server::local::local_cd(&instruct),
@@ -23,6 +32,8 @@ pub fn dispatch_server(instruct: Vec<&str>) -> Result<bool, String> {
         Some(&"clear") => server::local::clear_console(),
 
         // Session commands
+        Some(&"sessions") => server::sessions::list_sessions(state),
+        Some(&"session") => server::sessions::set_session(instruct, state),
 
         // Control commands
         _ => {

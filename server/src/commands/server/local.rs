@@ -1,7 +1,8 @@
 use crate::constants::{RESET, RED, YELLOW, DIM, WHITE, CYAN};
 
+use std::io::Write;
 use std::{env, path::Path};
-use std::fs;
+use std::{fs, io};
 
 
 
@@ -11,14 +12,14 @@ pub fn local_cd(instruct: &[&str]) -> Result<bool, String> {
         Some(p) => p,
         None => {
             println!("\n\t{DIM}[{RESET}{RED}err:lcd{RESET}{DIM}]{RESET} {YELLOW}Missing path:{RESET} {WHITE}{}{RESET}\n", instruct.join(" "));
-            return Ok(true)
+            return Ok(false)
         }
     };
 
     // Check if path is correct
     if !Path::new(path).exists(){
         println!("\n\t{DIM}[{RESET}{RED}err:lcd{RESET}{DIM}]{RESET} {YELLOW}Path dont exist:{RESET} {WHITE}{}{RESET}\n", path);
-        return Ok(true)
+        return Ok(false)
     }
 
     // Change directory
@@ -32,7 +33,6 @@ pub fn local_list() -> Result<bool, String> {
 
     println!("\n\t{DIM}[{RESET}{WHITE}ls:{RESET}{DIM}]{RESET} {CYAN}{}{RESET}\n", current_dir.display());
 
-    
     for entry in entries {
         let entry = entry.map_err(|e| e.to_string())?;
         let metadata = entry.metadata().map_err(|e| e.to_string())?;
@@ -56,4 +56,8 @@ pub fn local_pwd() -> Result<bool, String> {
 }
 
 
-pub fn clear_console() -> Result<bool, String> { print!("\x1B[2J\x1B[1;1H"); Ok(true) }
+pub fn clear_console() -> Result<bool, String> { 
+    print!("\x1B[2J\x1B[1;1H"); 
+    io::stdout().flush().expect("Cannot flush output");
+    Ok(true) 
+}

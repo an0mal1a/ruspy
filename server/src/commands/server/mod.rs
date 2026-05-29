@@ -1,3 +1,2 @@
-pub mod sessions;
-pub mod control;
+pub mod sessions; 
 pub mod local;
