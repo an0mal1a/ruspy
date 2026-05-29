@@ -1,31 +1,10 @@
-use shared::{ClientMessage, SystemInformation, utils::read_message};
-
-
+use shared::{ClientMessage, Privilege, SystemInformation, utils::read_message};
+use crate::constants::{CYAN, DIM, GREEN, RESET, WHITE, YELLOW, RED};
 use std::{io::Write, net::TcpStream};
 
-pub fn sysinfo(conn: &mut TcpStream) -> Result<bool, String> {
-    conn.write_all(b"sysinfo").expect("Error sending instruct"); // send message
-
-    let msg: ClientMessage = read_message(conn).map_err(|e| e.to_string())?;
-
-    match msg {
-        ClientMessage::SystemInformation(info) => {
-            pretty_print_sysinfo(&info);
-        },
-        ClientMessage::Error(err) => {
-            println!("client error: {err}");
-        }
-        _ => {
-            println!("unexpected client message");
-        }
-    }
-    
-    Ok(true)
-}
 
 fn pretty_print_sysinfo(info: &SystemInformation) {
-    use crate::constants::{CYAN, DIM, GREEN, RESET, WHITE, YELLOW};
-
+    
     fn opt(value: &Option<String>) -> &str {
         value.as_deref().unwrap_or("unknown")
     }
@@ -122,4 +101,41 @@ fn pretty_print_sysinfo(info: &SystemInformation) {
     }
 
     println!();
+}
+
+pub fn sysinfo(conn: &mut TcpStream) -> Result<bool, String> {
+    conn.write_all(b"sysinfo").expect("Error sending instruct"); // send message
+
+    let msg: ClientMessage = read_message(conn).map_err(|e| e.to_string())?;
+
+    match msg {
+        ClientMessage::SystemInformation(info) => {
+            pretty_print_sysinfo(&info);
+        },
+        ClientMessage::Error(err) => {
+            println!("client error: {err}");
+        }
+        _ => {
+            println!("unexpected client message");
+        }
+    }
+    
+    Ok(true)
+}
+
+
+pub fn check_permissions(conn: &mut TcpStream) -> Result<bool, String> {
+    conn.write_all(b"check").expect("Error sending instruct");
+    let msg: Privilege = read_message(conn).map_err(|e| e.to_string())?;
+
+    match msg {
+        Privilege::Admin => {
+            println!("\n\t{DIM}[{RESET}{GREEN}check{RESET}{DIM}]{RESET} {CYAN}Admin Privileges{RESET}\n");
+            Ok(true)
+        }, 
+        Privilege::User => {
+            println!("\n\t{DIM}[{RESET}{RED}check{RESET}{DIM}]{RESET} {YELLOW}User Privileges{RESET}\n");
+            Ok(true)
+        }
+    }
 }

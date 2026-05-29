@@ -10,6 +10,12 @@ pub enum ClientMessage  {
     Error(String)
 }
 
+// AdminStruct
+#[derive(Serialize, Deserialize)]
+pub enum Privilege {
+    Admin,
+    User
+}
 
 //  System information
 #[derive(Debug, Serialize, Deserialize)]

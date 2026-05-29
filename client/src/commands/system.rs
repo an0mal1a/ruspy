@@ -1,4 +1,4 @@
-use shared::{SystemInformation, OsInformation, HardwareInformation, MemoryInformation, ProcessInformation, DiskInformation, ClientMessage, utils::send_message};
+use shared::{ClientMessage, DiskInformation, HardwareInformation, MemoryInformation, OsInformation, Privilege, ProcessInformation, SystemInformation, utils::send_message};
 use std::net::TcpStream;
 
 use sysinfo::{
@@ -68,4 +68,30 @@ pub fn sysinfo(conn: &mut TcpStream) -> Result<bool, String> {
         Err(e) => return Err(e.to_string()) // ive should handle this better, the server can get stuck waiting for a msg
     }
 }
+// ---- sysInfo ---------------------------
+
+
+// ---- checkPrivileges ---------------------------
+#[cfg(unix)]
+pub fn is_admin() -> bool {
+    unsafe { libc::geteuid() == 0 }
+}
+
+#[cfg(windows)]
+pub fn is_admin() -> bool {
+    is_elevated::is_elevated()
+}
+
+pub fn check_privileges(conn: &mut TcpStream) -> Result<bool, String> {
+    let msg = match is_admin() {
+        true => Privilege::Admin,
+        false => Privilege::User,
+    };
+
+    match send_message(conn, &msg) {
+        Ok(_) => Ok(true),
+        Err(e) => return Err(e.to_string()) // ive should handle this better, the server can get stuck waiting for a msg
+    }
+}
+
 // ---- sysInfo ---------------------------
