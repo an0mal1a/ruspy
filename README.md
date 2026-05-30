@@ -34,10 +34,11 @@ The **client** connects to the server and dispatches each received instruction.
 - [x] TCP connection between server and client
 - [x] Basic instruction dispatch loop
 - [x] Graceful disconnection (`q` command)
-- [ ] Make a output directory (DATA) and structured dump
-- [ ] Change instruct send of string to enum
+- [x] Make a output directory (DATA) and structured dump
+- [x] Change instruct send of string to enum
 - [ ] Shell command execution
-- [ ] File upload / download
+- [x] Help panel
+- [x] File upload / download
 - [ ] Persistence
 - [ ] Multi-client support
 - [ ] Secure communication (AES256)

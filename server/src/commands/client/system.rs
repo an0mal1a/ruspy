@@ -1,10 +1,11 @@
-use shared::{ClientMessage, Privilege, SystemInformation, utils::read_message};
-use crate::constants::{CYAN, DIM, GREEN, RESET, WHITE, YELLOW, RED};
-use std::{io::Write, net::TcpStream};
-
+use crate::constants::{CYAN, DIM, GREEN, RED, RESET, WHITE, YELLOW};
+use shared::{
+    BoxLevel, ClientMessage, Display, InstructMessage, Privilege, SystemInformation,
+    utils::{get_flag_value, read_message, send_message},
+};
+use std::net::TcpStream;
 
 fn pretty_print_sysinfo(info: &SystemInformation) {
-    
     fn opt(value: &Option<String>) -> &str {
         value.as_deref().unwrap_or("unknown")
     }
@@ -29,14 +30,15 @@ fn pretty_print_sysinfo(info: &SystemInformation) {
 
     let hostname = opt(&info.os.hostname);
 
-    println!(
-        "\n\t{DIM}[{RESET}{GREEN}sysinfo{RESET}{DIM}]{RESET} {CYAN}{hostname}{RESET}\n"
-    );
+    println!("\n\t{DIM}[{RESET}{GREEN}sysinfo{RESET}{DIM}]{RESET} {CYAN}{hostname}{RESET}\n");
 
     println!("\t{DIM}[{RESET}{WHITE}os{RESET}{DIM}]{RESET}");
     println!("\t\t{YELLOW}name:{RESET}    {}", opt(&info.os.name));
     println!("\t\t{YELLOW}version:{RESET} {}", opt(&info.os.os_version));
-    println!("\t\t{YELLOW}kernel:{RESET}  {}", opt(&info.os.kernel_version));
+    println!(
+        "\t\t{YELLOW}kernel:{RESET}  {}",
+        opt(&info.os.kernel_version)
+    );
 
     println!("\n\t{DIM}[{RESET}{WHITE}hardware{RESET}{DIM}]{RESET}");
     println!("\t\t{YELLOW}cpu:{RESET}   {}", info.hardware.cpu_brand);
@@ -85,9 +87,11 @@ fn pretty_print_sysinfo(info: &SystemInformation) {
 
     let mut processes = info.processes.iter().collect::<Vec<_>>();
     processes.sort_by(|a, b| {
-        b.memory
-            .cmp(&a.memory)
-            .then_with(|| b.cpu_usage.partial_cmp(&a.cpu_usage).unwrap_or(std::cmp::Ordering::Equal))
+        b.memory.cmp(&a.memory).then_with(|| {
+            b.cpu_usage
+                .partial_cmp(&a.cpu_usage)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        })
     });
 
     for process in processes.into_iter().take(15) {
@@ -104,14 +108,24 @@ fn pretty_print_sysinfo(info: &SystemInformation) {
 }
 
 pub fn sysinfo(conn: &mut TcpStream) -> Result<bool, String> {
-    conn.write_all(b"sysinfo").expect("Error sending instruct"); // send message
+    let msg = InstructMessage::SysInfo;
+    match send_message(conn, &msg) {
+        Ok(_) => (),
+        Err(e) => {
+            println!(
+                "\n\t{DIM}[{RESET}{RED}sysinfo{RESET}{DIM}]{RESET} {YELLOW}{}{RESET}\n",
+                e
+            );
+            return Ok(true);
+        }
+    }
 
     let msg: ClientMessage = read_message(conn).map_err(|e| e.to_string())?;
 
     match msg {
         ClientMessage::SystemInformation(info) => {
             pretty_print_sysinfo(&info);
-        },
+        }
         ClientMessage::Error(err) => {
             println!("client error: {err}");
         }
@@ -119,29 +133,85 @@ pub fn sysinfo(conn: &mut TcpStream) -> Result<bool, String> {
             println!("unexpected client message");
         }
     }
-    
+
     Ok(true)
 }
 
-
 pub fn check_permissions(conn: &mut TcpStream) -> Result<bool, String> {
-    conn.write_all(b"check").expect("Error sending instruct");
+    let msg = InstructMessage::Check;
+    match send_message(conn, &msg) {
+        Ok(_) => (),
+        Err(e) => {
+            println!(
+                "\n\t{DIM}[{RESET}{RED}check{RESET}{DIM}]{RESET} {YELLOW}{}{RESET}\n",
+                e
+            );
+            return Ok(true);
+        }
+    }
+
     let msg: Privilege = read_message(conn).map_err(|e| e.to_string())?;
 
     match msg {
         Privilege::Admin => {
-            println!("\n\t{DIM}[{RESET}{GREEN}check{RESET}{DIM}]{RESET} {CYAN}Admin Privileges{RESET}\n");
+            println!(
+                "\n\t{DIM}[{RESET}{GREEN}check{RESET}{DIM}]{RESET} {CYAN}Admin Privileges{RESET}\n"
+            );
             Ok(true)
-        }, 
+        }
         Privilege::User => {
-            println!("\n\t{DIM}[{RESET}{RED}check{RESET}{DIM}]{RESET} {YELLOW}User Privileges{RESET}\n");
+            println!(
+                "\n\t{DIM}[{RESET}{RED}check{RESET}{DIM}]{RESET} {YELLOW}User Privileges{RESET}\n"
+            );
             Ok(true)
         }
     }
 }
 
-
 pub fn display(instruct: &[&str], conn: &mut TcpStream) -> Result<bool, String> {
-    conn.write_all(instruct.join(" ").as_bytes()).expect("Error sending instruct");
+    let instruct = instruct.join(" ");
+    let args = shell_words::split(&instruct).map_err(|e| e.to_string())?;
+
+    let title = match get_flag_value(&args, "-t") {
+        Some(f) => f,
+        None => {
+            println!(
+                "\n\t{DIM}[{RESET}{RED}display{RESET}{DIM}]{RESET} {YELLOW}Missing title.{RESET}\n\n\t\t{DIM}Usage:{RESET} {CYAN}display -t \"A Scary title\" -c \"A Scary content\"{RESET}\n"
+            );
+            return Ok(true);
+        }
+    };
+    let content = match get_flag_value(&args, "-c") {
+        Some(f) => f,
+        None => {
+            println!(
+                "\n\t{DIM}[{RESET}{RED}display{RESET}{DIM}]{RESET} {YELLOW}Missing content.{RESET}\n\n\t\t{DIM}Usage:{RESET} {CYAN}display -c \"A Scary content\" -t \"A Scary title\"{RESET}\n"
+            );
+            return Ok(true);
+        }
+    };
+    let level_raw = get_flag_value(&args, "-l").unwrap_or_else(|| "info".to_string());
+
+    let level = match level_raw.to_ascii_lowercase().as_str() {
+        "info" => BoxLevel::Info,
+        "warning" | "warn" => BoxLevel::Warning,
+        "error" | "err" => BoxLevel::Error,
+        _ => {
+            println!(
+                "\n\t{DIM}[{RESET}{RED}err:display{RESET}{DIM}]{RESET} {YELLOW}Invalid level:{RESET} {WHITE}{}{RESET} {DIM}(try: info / warning / error){RESET}\n",
+                level_raw
+            );
+            return Ok(true);
+        }
+    };
+
+    let msg = InstructMessage::Display(Display {
+        title,
+        content,
+        level,
+    });
+
+    send_message(conn, &msg).map_err(|e| e.to_string())?;
+
     Ok(true)
 }

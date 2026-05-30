@@ -1,7 +1,10 @@
 use std::io::{Read, Write};
 use std::net::TcpStream;
 
-pub fn send_message<T: serde::Serialize>(stream: &mut TcpStream, message: &T) -> Result<(), Box<dyn std::error::Error>> {
+pub fn send_message<T: serde::Serialize>(
+    stream: &mut TcpStream,
+    message: &T,
+) -> Result<(), Box<dyn std::error::Error>> {
     let payload = serde_json::to_vec(message)?;
 
     let len = payload.len() as u32;
@@ -13,7 +16,9 @@ pub fn send_message<T: serde::Serialize>(stream: &mut TcpStream, message: &T) ->
     Ok(())
 }
 
-pub fn read_message<T: serde::de::DeserializeOwned>(stream: &mut TcpStream) -> Result<T, Box<dyn std::error::Error>> {
+pub fn read_message<T: serde::de::DeserializeOwned>(
+    stream: &mut TcpStream,
+) -> Result<T, Box<dyn std::error::Error>> {
     let mut len_bytes = [0u8; 4];
     stream.read_exact(&mut len_bytes)?;
 
@@ -25,4 +30,10 @@ pub fn read_message<T: serde::de::DeserializeOwned>(stream: &mut TcpStream) -> R
     let message = serde_json::from_slice(&payload)?;
 
     Ok(message)
+}
+
+pub fn get_flag_value(args: &[String], flag: &str) -> Option<String> {
+    args.windows(2)
+        .find(|window| window[0] == flag)
+        .map(|window| window[1].clone())
 }

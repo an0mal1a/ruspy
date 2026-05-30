@@ -1,29 +1,55 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 pub mod utils;
 
 pub const FILE_CHUNK_SIZE: usize = 64 * 1024;
 
 // Client/Server messages
 #[derive(Serialize, Deserialize)]
-pub enum ClientMessage  {
+pub enum ClientMessage {
     SystemInformation(SystemInformation),
-    FileDownload(FileHeader),
-    Pong, 
-    Error(String)
+    FileHandler(FileHeader),
+    Pong,
+    Error(String),
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum InstructMessage {
+    SysInfo,
+    Check,
+    Display(Display),
+
+    Download(String),
+    Upload,
+
+    Close,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Display {
+    pub title: String,
+    pub content: String,
+    pub level: BoxLevel,
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum BoxLevel {
+    Info,
+    Warning,
+    Error,
 }
 
 // AdminStruct
 #[derive(Serialize, Deserialize)]
 pub enum Privilege {
     Admin,
-    User
+    User,
 }
 
 // File header
 #[derive(Serialize, Deserialize)]
 pub struct FileHeader {
     pub name: String,
-    pub size: u64
+    pub size: u64,
 }
 
 //  System information
@@ -47,11 +73,11 @@ pub struct OsInformation {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HardwareInformation {
     pub cpu_brand: String,
-    pub cpu_count: usize
+    pub cpu_count: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct  MemoryInformation {
+pub struct MemoryInformation {
     pub total_ram: u64,
     pub used_ram: u64,
     pub total_swap: u64,
@@ -63,9 +89,8 @@ pub struct ProcessInformation {
     pub pid: u32,
     pub name: String,
     pub cpu_usage: f32,
-    pub memory: u64
+    pub memory: u64,
 }
-
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DiskInformation {

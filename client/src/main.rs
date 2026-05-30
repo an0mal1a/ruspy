@@ -1,5 +1,7 @@
 // Dependecies
-use std::{io::Read, net::{TcpStream, Shutdown}};
+use std::net::{Shutdown, TcpStream};
+
+use shared::{InstructMessage, utils::read_message};
 
 // Internal modules
 mod commands;
@@ -9,26 +11,20 @@ const SERVER_ADDRESS: &str = "127.0.0.1:1337";
 fn handle_server(mut conn: TcpStream) -> Result<(), String> {
     println!("Connected to server: {:#?}", conn);
 
-    let mut buff = [0; 1024];
-    
     loop {
-        let bytes_read = match conn.read(&mut buff) {
-            Ok(0) => { 
-                println!("Server close connection...");
-                break;
-            }
-
-            Ok(b) => b,
-            Err(err) => { return Err(err.to_string()) }
+        let msg: InstructMessage = match read_message(&mut conn) {
+            Ok(msg) => msg,
+            Err(err) => return Err(err.to_string()),
         };
 
-        let instruct = String::from_utf8_lossy(&buff[..bytes_read]);
-
         // This functions return false when we should close the connection
-        match handle_instruct(instruct.trim().split_whitespace().collect(), &mut conn) {
+        match handle_instruct(msg, &mut conn) {
             Ok(b) if b => (),
-            Err(err) => { println!("An error has ocurred: {}", err); break; }
-            _ => break
+            Err(err) => {
+                println!("An error has ocurred: {}", err);
+                break;
+            }
+            _ => break,
         };
     }
 
@@ -37,7 +33,7 @@ fn handle_server(mut conn: TcpStream) -> Result<(), String> {
     Ok(())
 }
 
-fn handle_instruct(instruct: Vec<&str>, conn: &mut TcpStream) -> Result<bool, String> {
+fn handle_instruct(instruct: InstructMessage, conn: &mut TcpStream) -> Result<bool, String> {
     commands::dispatch(instruct, conn)
 }
 

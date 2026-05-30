@@ -1,5 +1,8 @@
 use rfd::MessageDialog;
-use shared::{ClientMessage, DiskInformation, HardwareInformation, MemoryInformation, OsInformation, Privilege, ProcessInformation, SystemInformation, utils::send_message};
+use shared::{
+    BoxLevel, ClientMessage, DiskInformation, Display, HardwareInformation, MemoryInformation,
+    OsInformation, Privilege, ProcessInformation, SystemInformation, utils::send_message,
+};
 use std::net::TcpStream;
 
 use sysinfo::{Disks, System};
@@ -14,12 +17,16 @@ fn get_system_information() -> SystemInformation {
         name: System::name(),
         hostname: System::host_name(),
         kernel_version: System::kernel_version(),
-        os_version: System::os_version()
+        os_version: System::os_version(),
     };
 
     let hwd_info = HardwareInformation {
-        cpu_brand: sys.cpus().first().map(|cpu| cpu.brand().to_string()).unwrap_or_else(|| "unknown".to_string()),
-        cpu_count: sys.cpus().len()
+        cpu_brand: sys
+            .cpus()
+            .first()
+            .map(|cpu| cpu.brand().to_string())
+            .unwrap_or_else(|| "unknown".to_string()),
+        cpu_count: sys.cpus().len(),
     };
 
     let mem_info = MemoryInformation {
@@ -41,8 +48,8 @@ fn get_system_information() -> SystemInformation {
         .collect();
 
     let disks_raw: Disks = Disks::new_with_refreshed_list();
-    
-    let disks:Vec<DiskInformation> = disks_raw
+
+    let disks: Vec<DiskInformation> = disks_raw
         .iter()
         .map(|disk| DiskInformation {
             name: disk.name().to_string_lossy().to_string(),
@@ -52,11 +59,17 @@ fn get_system_information() -> SystemInformation {
             is_removable: disk.is_removable(),
             is_read_only: disk.is_read_only(),
             device_path: disk.mount_point().to_string_lossy().to_string(),
-        }).collect();
+        })
+        .collect();
 
-
-    SystemInformation { os: os_info, hardware: hwd_info, memory: mem_info, processes, disks }
-}   
+    SystemInformation {
+        os: os_info,
+        hardware: hwd_info,
+        memory: mem_info,
+        processes,
+        disks,
+    }
+}
 
 pub fn sysinfo(conn: &mut TcpStream) -> Result<bool, String> {
     let info: SystemInformation = get_system_information();
@@ -64,11 +77,10 @@ pub fn sysinfo(conn: &mut TcpStream) -> Result<bool, String> {
     let msg = ClientMessage::SystemInformation(info);
     match send_message(conn, &msg) {
         Ok(_) => Ok(true),
-        Err(e) => return Err(e.to_string()) // ive should handle this better, the server can get stuck waiting for a msg
+        Err(e) => return Err(e.to_string()), // ive should handle this better, the server can get stuck waiting for a msg
     }
 }
 // ---- sysInfo ---------------------------
-
 
 // ---- checkPrivileges ---------------------------
 #[cfg(unix)]
@@ -89,25 +101,25 @@ pub fn check_privileges(conn: &mut TcpStream) -> Result<bool, String> {
 
     match send_message(conn, &msg) {
         Ok(_) => Ok(true),
-        Err(e) => return Err(e.to_string()) // ive should handle this better, the server can get stuck waiting for a msg
+        Err(e) => return Err(e.to_string()), // ive should handle this better, the server can get stuck waiting for a msg
     }
 }
 
 // ---- checkPrivileges ---------------------------
 
-
 // ---- Display ---------------------------
 
-pub fn display_message(instruct: &[&str]) -> Result<bool, String> {
-    let msg = match instruct.get(1..instruct.len()) {
-        Some(msg) => msg.join(" "),
-        None => { return Ok(true) }
+pub fn display_message(content: Display) -> Result<bool, String> {
+    let level = match content.level {
+        BoxLevel::Info => rfd::MessageLevel::Info,
+        BoxLevel::Warning => rfd::MessageLevel::Warning,
+        BoxLevel::Error => rfd::MessageLevel::Error,
     };
 
     MessageDialog::new()
-        .set_level(rfd::MessageLevel::Info)
-        .set_title("")
-        .set_description(msg)
+        .set_level(level)
+        .set_title(content.title)
+        .set_description(content.content)
         .show();
 
     Ok(true)

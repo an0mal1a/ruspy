@@ -1,20 +1,28 @@
-use crate::{c2_state::{AgentConnection, C2State}, constants::{CYAN, DIM, RED, RESET, YELLOW, GREEN}};
-use std::net::TcpStream;
+use crate::{
+    c2_state::{AgentConnection, C2State},
+    constants::{CYAN, DIM, GREEN, RED, RESET, YELLOW},
+};
 use rustyline::DefaultEditor;
+use std::net::TcpStream;
 
-use crate::constants;
 use crate::commands;
+use crate::constants;
 
 pub fn list_sessions(state: &C2State) -> Result<bool, String> {
     let agents = state.agents.lock().map_err(|e| e.to_string())?;
 
     if agents.is_empty() {
-        println!("\n\t{DIM}[{RESET}{RED}sessions{RESET}{DIM}]{RESET} {YELLOW}No active connections.{RESET}\n");
+        println!(
+            "\n\t{DIM}[{RESET}{RED}sessions{RESET}{DIM}]{RESET} {YELLOW}No active connections.{RESET}\n"
+        );
         return Ok(true);
     };
 
     for session in agents.iter() {
-        println!("\n\t{RED}{}{DIM}.{RESET} {YELLOW}{}{RESET}\n", session.id, session.ip);
+        println!(
+            "\n\t{RED}{}{DIM}.{RESET} {YELLOW}{}{RESET}\n",
+            session.id, session.ip
+        );
     }
 
     Ok(true)
@@ -24,9 +32,12 @@ pub fn set_session(instruct: Vec<&str>, state: &C2State) -> Result<bool, String>
     let session_id = match instruct.get(1) {
         Some(id) => id,
         None => {
-            println!("\n\t{DIM}[{RESET}{RED}{}{RESET}{DIM}]{RESET} {YELLOW}ID not specified.{RESET}\n", instruct.join(" "));
+            println!(
+                "\n\t{DIM}[{RESET}{RED}{}{RESET}{DIM}]{RESET} {YELLOW}ID not specified.{RESET}\n",
+                instruct.join(" ")
+            );
             return Ok(false);
-        },
+        }
     };
 
     let session_id: usize = match session_id.parse() {
@@ -35,10 +46,9 @@ pub fn set_session(instruct: Vec<&str>, state: &C2State) -> Result<bool, String>
             println!(
                 "\n\t{DIM}[{RESET}{RED}session{RESET}{DIM}]{RESET} {YELLOW}Invalid ID.{RESET}\n"
             );
-            return Ok(false)
+            return Ok(false);
         }
     };
-
 
     // Enter to the session
     match state.set_active_session(session_id) {
@@ -49,7 +59,7 @@ pub fn set_session(instruct: Vec<&str>, state: &C2State) -> Result<bool, String>
             );
 
             let agent = state.get_active_agent()?;
-            state.set_mod("operator"); 
+            state.set_mod("operator");
             handle_client(agent, state)?;
 
             Ok(true)
@@ -66,23 +76,28 @@ pub fn set_session(instruct: Vec<&str>, state: &C2State) -> Result<bool, String>
     }
 }
 
-// 
-fn handle_client_instruct(instruct: &str, conn: &mut TcpStream, state: &C2State) -> Result<bool, String> {
+//
+fn handle_client_instruct(
+    instruct: &str,
+    conn: &mut TcpStream,
+    state: &C2State,
+) -> Result<bool, String> {
     commands::dispatch_client(instruct.trim().split_whitespace().collect(), conn, state)
 }
 
-
-fn handle_client(agent: AgentConnection, state: &C2State) -> Result<(), String>{
+fn handle_client(agent: AgentConnection, state: &C2State) -> Result<(), String> {
     // let mut buff = [0; 1024];
     let mut conn = agent.conn;
     let mut rl = DefaultEditor::new().map_err(|e| e.to_string())?;
 
     loop {
-        // Read from CLI 
+        // Read from CLI
         let prompt = constants::build_prompt(&state);
         let instruct = rl.readline(&prompt).map_err(|e| e.to_string())?;
 
-        if instruct.trim().to_ascii_lowercase() == "q" || instruct.trim().to_ascii_lowercase() == "exit" {
+        if instruct.trim().to_ascii_lowercase() == "q"
+            || instruct.trim().to_ascii_lowercase() == "exit"
+        {
             state.set_mod("manager");
             break;
         }
@@ -90,11 +105,11 @@ fn handle_client(agent: AgentConnection, state: &C2State) -> Result<(), String>{
         if !instruct.trim().is_empty() {
             let _ = rl.add_history_entry(instruct.as_str());
         }
-        
+
         match handle_client_instruct(instruct.trim(), &mut conn, state) {
-            Ok(b) if b => "",
-            Err(err) => { 
-                println!("An error has ocurred: {}", err); 
+            Ok(b) if b => (),
+            Err(err) => {
+                println!("An error has ocurred: {}", err);
                 continue;
             }
             _ => {
@@ -103,6 +118,6 @@ fn handle_client(agent: AgentConnection, state: &C2State) -> Result<(), String>{
             }
         };
     }
-    
+
     Ok(())
 }
