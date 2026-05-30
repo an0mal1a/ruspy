@@ -94,9 +94,11 @@ fn handle_sessions(state: Arc<C2State>, ui_rx: Receiver<UiEvent>) -> Result<(), 
             return Ok(());
         }
 
-        if !instruct.trim().is_empty() {
+        if !instruct.trim().is_empty() 
+        {
             let _ = rl.add_history_entry(instruct.as_str());
-        }
+        } 
+        else { continue; }
 
         match handle_server_instruct(instruct.trim().split_whitespace().collect(), &state) {
             Ok(_) => (),

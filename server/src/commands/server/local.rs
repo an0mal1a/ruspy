@@ -104,16 +104,20 @@ pub fn build_help_panel() -> String {
         "Check if the client has admin privileges.",
     ));
     panel.push_str(&help_row(
+        "display -t \"Title\" -c \"Content\" -l info",
+        "Show a message box on the client.",
+    ));
+    panel.push_str(&help_row(
+        "shell",
+        "Enter shell mode (all sended commands will be interpreted by powershell/bash) [exit/q].",
+    ));
+    panel.push_str(&help_row(
         "download -f \"C:\\path\\file.txt\"",
         "Download a file from the client into DATA/session_<id>.",
     ));
     panel.push_str(&help_row(
         "upload <local_path>",
         "Upload a local server file to the client.",
-    ));
-    panel.push_str(&help_row(
-        "display -t \"Title\" -c \"Content\" -l info",
-        "Show a message box on the client.",
     ));
     panel.push_str(&help_row("close", "Close the active client connection."));
     panel.push_str(&help_row("q | exit", "Return to the manager prompt."));

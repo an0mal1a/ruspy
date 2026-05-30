@@ -8,20 +8,32 @@ pub const FILE_CHUNK_SIZE: usize = 64 * 1024;
 pub enum ClientMessage {
     SystemInformation(SystemInformation),
     FileHandler(FileHeader),
+    ShellOutput(ShellOutput),
     Pong,
     Error(String),
 }
 
 #[derive(Serialize, Deserialize)]
 pub enum InstructMessage {
+    // System
     SysInfo,
     Check,
     Display(Display),
 
+    // Shell
+    Shell,
+
+    // FileSystem
     Download(String),
     Upload,
 
     Close,
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum ShellCommand {
+    Command(String),
+    Close, 
 }
 
 #[derive(Serialize, Deserialize)]
@@ -50,6 +62,13 @@ pub enum Privilege {
 pub struct FileHeader {
     pub name: String,
     pub size: u64,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ShellOutput {
+    pub stdout: String,
+    pub stderr: String,
+    pub exit_code: Option<i32>,
 }
 
 //  System information

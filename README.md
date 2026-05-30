@@ -40,7 +40,7 @@ The **client** connects to the server and dispatches each received instruction.
 - [x] Help panel
 - [x] File upload / download
 - [ ] Persistence
-- [ ] Multi-client support
+- [x] Multi-client support
 - [ ] Secure communication (AES256)
 - [ ] GUI (maybe)
 - [ ] And more
