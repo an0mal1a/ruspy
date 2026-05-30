@@ -93,8 +93,14 @@ fn handle_client(agent: AgentConnection, state: &C2State) -> Result<(), String>{
         
         match handle_client_instruct(instruct.trim(), &mut conn, state) {
             Ok(b) if b => "",
-            Err(err) => { println!("An error has ocurred: {}", err); break; }
-            _ => break
+            Err(err) => { 
+                println!("An error has ocurred: {}", err); 
+                continue;
+            }
+            _ => {
+                state.set_mod("manager");
+                break;
+            }
         };
     }
     

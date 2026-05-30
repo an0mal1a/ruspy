@@ -1,18 +1,31 @@
 // Dependecies
-use std::{net::TcpListener, sync::{Arc, mpsc::{Receiver, Sender}}, thread::{self, sleep}};
-// use rustyline::error::ReadlineError;
+use std::{fs, net::TcpListener, path::Path, sync::{Arc, mpsc::{Receiver, Sender}}, thread::{self, sleep}};
 use rustyline::{DefaultEditor};
 use core::time;
-
 
 // Internal modules
 mod constants;
 mod commands;
 mod c2_state;
 
-use constants::{RESET, DIM, WHITE, GREEN, RED, CYAN, UiEvent};
+use constants::{RESET, DIM, WHITE, GREEN, RED, CYAN, YELLOW, OUTPATH, UiEvent};
 use c2_state::C2State;
 
+fn ensure_output_path() -> Result<(), String> {
+    let path = Path::new(OUTPATH);
+
+    if !path.exists(){
+        match fs::create_dir(path) {
+            Ok(_) => (),
+            Err(e) => {
+                println!("\n\t{DIM}[{RESET}{RED}err:download{RESET}{DIM}]{RESET} {YELLOW}{}{RESET}\n", e);
+                return Err(e.to_string())
+            }
+        };
+    }
+
+    Ok(())
+}
 
 fn handle_server_instruct(instruct: Vec<&str>, state: &C2State) -> Result<bool, String> {
     commands::dispatch_server(instruct, state)
@@ -88,6 +101,7 @@ fn main() {
     let state: Arc<C2State> = Arc::new(C2State::new());
     let listener_state = Arc::clone(&state);
     let (ui_tx, ui_rx) = std::sync::mpsc::channel::<constants::UiEvent>();
+    let _ = ensure_output_path();
 
     // Create thread of new connections
     thread::spawn(move || {  handle_new_connection(listener_state, ui_tx)});

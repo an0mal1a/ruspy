@@ -1,4 +1,5 @@
-use std::{net::TcpStream, sync::{Arc, Mutex}};
+use std::{fs, net::TcpStream, sync::{Arc, Mutex}};
+use crate::constants::OUTPATH;
 
 pub struct C2State {
     pub agents:         Arc<Mutex<Vec<AgentConnection>>>,
@@ -10,6 +11,7 @@ pub struct C2State {
 pub struct AgentConnection {
     pub id: usize,
     pub ip: String,
+    pub path: String,
     pub conn: TcpStream
 }
 
@@ -40,7 +42,9 @@ impl C2State {
 
     pub fn add_agent(&self, ip: &str, conn: TcpStream) {
         let next_id = self.agent_count() + 1;
-        self.agents.lock().unwrap().push(AgentConnection { id: next_id, ip: ip.to_string(), conn });
+        let path = format!("{}/{}", OUTPATH, Self::sanitize_path_component(ip));
+        let _ = fs::create_dir(&path);
+        self.agents.lock().unwrap().push(AgentConnection { id: next_id, ip: ip.to_string(), conn, path: path});
     }
 
     pub fn remove_agent(&self, id: usize) {
@@ -81,8 +85,25 @@ impl C2State {
         Ok(AgentConnection {
             id: agent.id,
             ip: agent.ip.clone(),
+            path: agent.path.clone(),
             conn: agent.conn.try_clone().map_err(|e| e.to_string())?,
         })
+    }
+
+    pub fn get_active_path(&self) -> String {
+        match self.get_active_agent() {
+            Ok(a) => a.path,
+            Err(e) => e.to_string()
+        }
+    }
+
+    fn sanitize_path_component(s: &str) -> String {
+        s.chars()
+            .map(|c| match c {
+                '<' | '>' | ':' | '"' | '/' | '\\' | '|' | '?' | '*' => '_',
+                _ => c,
+            })
+            .collect()
     }
 
 }

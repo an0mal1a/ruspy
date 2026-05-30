@@ -18,7 +18,7 @@ pub fn dispatch_client(instruct:  Vec<&str>, conn: &mut TcpStream, state: &C2Sta
         Some(&"display") => client::system::display(&instruct, conn),
 
         // File system
-        Some(&"download") => client::filesystem::download(&instruct, conn),
+        Some(&"download") => client::filesystem::download(&instruct, conn, state),
 
         // Close
         Some(&"close") => client::control::close_session(conn, state, true),

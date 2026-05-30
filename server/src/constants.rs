@@ -12,7 +12,7 @@ pub const YELLOW: &str = "\x1b[33m";
 pub const RED: &str = "\x1b[31m";
 pub const CYAN: &str = "\x1b[36m";
 pub const WHITE:  &str = "\x1b[97m";
-
+pub const OUTPATH: &str = "./DATA";
 
 pub fn build_prompt(state: &C2State) -> (String, String) {
     let count = state.agent_count();

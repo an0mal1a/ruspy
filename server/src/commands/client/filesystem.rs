@@ -1,5 +1,5 @@
 use shared::{ClientMessage, FILE_CHUNK_SIZE, FileHeader, utils::read_message};
-use crate::constants::{DIM, CYAN, GREEN, RESET, WHITE, YELLOW, RED};
+use crate::{c2_state::C2State, constants::{CYAN, DIM, GREEN, RED, RESET, WHITE, YELLOW}};
 use std::{fs, io::{Read, Write}, net::TcpStream};
 
 
@@ -22,7 +22,7 @@ fn print_progress_bar(read_bytes: u64, total_bytes: u64) {
 }
 
 
-pub fn download(instruct: &[&str], conn: &mut TcpStream) -> Result<bool, String> {
+pub fn download(instruct: &[&str], conn: &mut TcpStream, state: &C2State) -> Result<bool, String> {
     conn.write_all(instruct.join(" ").as_bytes()).map_err(|e| e.to_string())?;
 
     // Recive file size (or error)
@@ -45,7 +45,9 @@ pub fn download(instruct: &[&str], conn: &mut TcpStream) -> Result<bool, String>
     let mut buf = [0u8; FILE_CHUNK_SIZE];
     let mut read_bytes: u64 = 0;
     let mut last_printed: u64 = 0;
-    let mut output = fs::File::create(&fileheader.name).map_err(|e| e.to_string())?;
+    
+    let path = format!("{}/{}", state.get_active_path(), &fileheader.name);
+    let mut output = fs::File::create(path).map_err(|e| e.to_string())?;
 
     while read_bytes < fileheader.size {
         let bytes_read = match conn.read(&mut buf) {
