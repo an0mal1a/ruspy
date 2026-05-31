@@ -24,30 +24,17 @@ fn handle_command(cmd: &str) -> Result<ShellOutput, String> {
     }
 }
 
-pub fn run(conn: &mut TcpStream) -> Result<bool, String> {
-    loop {
-        let msg: ShellCommand = match read_message(conn) {
-            Ok(msg) => msg,
-            Err(_) => break,
-        };
-
-        match msg {
-            ShellCommand::Command(c) => {
-                match handle_command(&c) {
-                    Ok(out) => { 
-                        let msg = ClientMessage::ShellOutput(out);
-                        let _ = send_message(conn, &msg);
-                    },
-                    Err(e) => {
-                        let msg = ClientMessage::Error(e);
-                        let _ = send_message(conn, &msg); 
-                    }
-                }
-            }
-
-            ShellCommand::Close => break,
+pub fn run(conn: &mut TcpStream, cmd: String) -> Result<bool, String> {
+    match handle_command(&cmd) {
+        Ok(out) => { 
+            let msg = ClientMessage::ShellOutput(out);
+            let _ = send_message(conn, &msg);
+        },
+        Err(e) => {
+            let msg = ClientMessage::Error(e);
+            let _ = send_message(conn, &msg); 
         }
-    };
+    }
 
     Ok(true)
 }

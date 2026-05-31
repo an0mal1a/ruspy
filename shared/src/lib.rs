@@ -9,6 +9,7 @@ pub enum ClientMessage {
     SystemInformation(SystemInformation),
     FileHandler(FileHeader),
     ShellOutput(ShellOutput),
+    ShellDone,
     Pong,
     Error(String),
 }
@@ -21,6 +22,7 @@ pub enum InstructMessage {
     Display(Display),
 
     // Shell
+    Exec(String),
     Shell,
 
     // FileSystem

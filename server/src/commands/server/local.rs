@@ -108,8 +108,12 @@ pub fn build_help_panel() -> String {
         "Show a message box on the client.",
     ));
     panel.push_str(&help_row(
+        "exec <command>",
+        "Execute a single command (or onliners!).",
+    ));
+    panel.push_str(&help_row(
         "shell",
-        "Enter shell mode (all sended commands will be interpreted by powershell/bash) [exit/q].",
+        "Enter shell mode [exit/q] (unimplemented!).",
     ));
     panel.push_str(&help_row(
         "download -f \"C:\\path\\file.txt\"",
