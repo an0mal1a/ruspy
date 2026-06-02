@@ -112,12 +112,16 @@ pub fn build_help_panel() -> String {
         "Execute a single command (or onliners!).",
     ));
     panel.push_str(&help_row(
-        "shell",
-        "Enter shell mode [exit/q] (unimplemented!).",
+        "wifidump",
+        "Dump all wifi profiles saved on the remote device.",
     ));
     panel.push_str(&help_row(
-        "download -f \"C:\\path\\file.txt\"",
-        "Download a file from the client into DATA/session_<id>.",
+        "screenshot",
+        "Capture the primary monitor and download it automatically.",
+    ));
+    panel.push_str(&help_row(
+        "download -f \"C:\\path\\file.txt\" [-r]",
+        "Download a file from the client. -r removes it after transfer.",
     ));
     panel.push_str(&help_row(
         "upload <local_path>",

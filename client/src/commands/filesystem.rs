@@ -1,6 +1,5 @@
 use shared::{
-    ClientMessage, FILE_CHUNK_SIZE, FileHeader,
-    utils::{read_message, send_message},
+    ClientMessage, Download, FILE_CHUNK_SIZE, FileHeader, utils::{read_message, send_message}
 };
 use std::{
     fs,
@@ -44,7 +43,9 @@ pub fn upload(conn: &mut TcpStream) -> Result<bool, String> {
     Ok(true)
 }
 
-pub fn download(filepath: String, conn: &mut TcpStream) -> Result<bool, String> {
+pub fn download(obj: Download, conn: &mut TcpStream) -> Result<bool, String> {
+    let filepath = obj.path; 
+
     if filepath.is_empty() {
         let _ = send_message(
             conn,
@@ -112,6 +113,11 @@ pub fn download(filepath: String, conn: &mut TcpStream) -> Result<bool, String> 
             .map_err(|e| e.to_string())?;
         read_bytes += bytes_read as u64;
     }
+
+    if obj.delete {
+        let _ = fs::remove_file(filepath);
+    }
+
 
     Ok(true)
 }

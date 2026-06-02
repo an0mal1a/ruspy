@@ -37,3 +37,7 @@ pub fn get_flag_value(args: &[String], flag: &str) -> Option<String> {
         .find(|window| window[0] == flag)
         .map(|window| window[1].clone())
 }
+
+pub fn has_flag(args: &[String], flag: &str) -> bool {
+    args.iter().any(|a| a == flag)
+}

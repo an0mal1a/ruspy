@@ -6,6 +6,8 @@ edition = "2024"
 [dependencies]
 rfd = "0.15"
 libc = "0.2"
+xcap = "0.9.6"
+tempfile = "3.27.0"
 sysinfo = "0.39.3" 
 shared ={ path = "../shared" }
 

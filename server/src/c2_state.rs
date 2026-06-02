@@ -107,7 +107,9 @@ impl C2State {
     }
 
     fn sanitize_path_component(s: &str) -> String {
-        s.chars()
+        let ip = s.split(":").next().unwrap_or(s).to_string();
+
+        ip.chars()
             .map(|c| match c {
                 '<' | '>' | ':' | '"' | '/' | '\\' | '|' | '?' | '*' => '_',
                 _ => c,

