@@ -7,5 +7,9 @@ edition = "2024"
 rfd = "0.15"
 libc = "0.2"
 sysinfo = "0.39.3" 
-is_elevated = "0.1.2"
 shared ={ path = "../shared" }
+
+[target.'cfg(windows)'.dependencies]
+quick-xml = "0.39.0"
+is_elevated = "0.1.2"
+windows = { version = "0.62.2", features = ["Win32_NetworkManagement_WiFi"] }

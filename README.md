@@ -36,9 +36,11 @@ The **client** connects to the server and dispatches each received instruction.
 - [x] Graceful disconnection (`q` command)
 - [x] Make a output directory (DATA) and structured dump
 - [x] Change instruct send of string to enum
-- [ ] Shell command execution
+- [x] Shell command execution
+- [x] Wifi Password dumping
 - [x] Help panel
 - [x] File upload / download
+- [ ] Shell mode (interactive poweshell/bash)
 - [ ] Persistence
 - [x] Multi-client support
 - [ ] Secure communication (AES256)

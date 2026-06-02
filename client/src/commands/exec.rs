@@ -1,5 +1,5 @@
 use std::{net::TcpStream, process::Command};
-use shared::{ClientMessage, ShellCommand, ShellOutput, utils::{read_message, send_message}};
+use shared::{ClientMessage, ShellOutput, utils::send_message};
 
 fn handle_command(cmd: &str) -> Result<ShellOutput, String> {
     #[cfg(target_os = "windows")]

@@ -257,9 +257,11 @@ version = "0.1.0"
 dependencies = [
  "is_elevated",
  "libc",
+ "quick-xml",
  "rfd",
  "shared",
  "sysinfo",
+ "windows",
 ]
 
 [[package]]

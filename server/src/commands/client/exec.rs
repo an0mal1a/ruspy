@@ -1,4 +1,4 @@
-use crate::{constants::{self, DIM, CYAN, GREEN, RED, RESET, WHITE, YELLOW}};
+use crate::{constants::{DIM, CYAN, GREEN, RED, RESET, WHITE, YELLOW}};
 use shared::{ClientMessage, InstructMessage, utils::{read_message, send_message}};
 use std::net::TcpStream;
 

