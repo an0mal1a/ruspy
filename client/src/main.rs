@@ -6,6 +6,7 @@ use shared::{InstructMessage, utils::read_message};
 // Internal modules
 mod commands;
 
+const SERVER_IP: &str = "127.0.0.1";
 const SERVER_ADDRESS: &str = "127.0.0.1:1337";
 
 fn handle_server(mut conn: TcpStream) -> Result<(), String> {

