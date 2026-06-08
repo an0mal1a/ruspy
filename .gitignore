@@ -1,2 +1,4 @@
 /target
 t.md
+client/src/commands/shell copy.rs
+server/src/commands/client/shell copy.rs
